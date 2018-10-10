@@ -27,12 +27,15 @@ pipeline:
   dockerhub:
     image: plugins/docker
     repo: codestation/swarm-updater
-    mirror: https://registry-proxy.megpoid.xyz
+    mirror: http://mirror:5000
     secrets:
     - source: dockerhub_username
       target: docker_username
     - source: dockerhub_password
       target: docker_password
+    build_args:
+    - BUILD_NUMBER=${DRONE_BUILD_NUMBER}
+    - BUILD_COMMIT_SHORT=${DRONE_COMMIT_SHA:0:8}
     tags: [ latest ]
 
 branches: master

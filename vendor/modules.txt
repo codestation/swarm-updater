@@ -41,7 +41,7 @@ github.com/docker/distribution/registry/storage/cache
 github.com/docker/distribution/registry/storage/cache/memory
 github.com/docker/distribution/uuid
 github.com/docker/distribution/metrics
-# github.com/docker/docker v0.7.3-0.20181009194718-82a4797499a6
+# github.com/docker/docker v1.13.1 => github.com/docker/engine v0.0.0-20180718150940-a3ef7e9a9bda
 github.com/docker/docker/api/types
 github.com/docker/docker/api/types/swarm
 github.com/docker/docker/client
@@ -96,7 +96,7 @@ github.com/gorilla/context
 github.com/gorilla/mux
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
-# github.com/konsorten/go-windows-terminal-sequences v0.0.0-20180402223658-b729f2633dfe
+# github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
@@ -150,21 +150,21 @@ github.com/theupdateframework/notary/tuf/utils
 github.com/theupdateframework/notary/tuf/validation
 # github.com/urfave/cli v1.20.0
 github.com/urfave/cli
-# golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
+# golang.org/x/crypto v0.0.0-20181009213950-7c1a557ab941
 golang.org/x/crypto/ssh/terminal
 golang.org/x/crypto/pbkdf2
 # golang.org/x/lint v0.0.0-20180702182130-06c8688daad7
 golang.org/x/lint/golint
 golang.org/x/lint
 # golang.org/x/net v0.0.0-20181005035420-146acd28ed58
+golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/proxy
-golang.org/x/net/context
 golang.org/x/net/internal/socks
 # golang.org/x/sys v0.0.0-20181005133103-4497e2df6f9e
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/tools v0.0.0-20181010000725-29f11e2b93f4
+# golang.org/x/tools v0.0.0-20181010211120-37fd46feaea9
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
 golang.org/x/tools/go/internal/gcimporter
