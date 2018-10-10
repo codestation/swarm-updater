@@ -1,0 +1,38 @@
+workspace:
+  base: /go
+  path: src/megpoid.xyz/go/swarm-updater
+
+pipeline:
+  test:
+    image: golang:1.11
+    commands:
+    - go install -mod vendor golang.org/x/lint/golint
+    - go vet -mod vendor ./...
+    - go test -mod vendor -v ./...
+    - golint -set_exit_status `find . -type d -not -path "./vendor*" -not -path "./.git*"`
+    environment:
+    - GO111MODULE=on
+
+  publish:
+    image: plugins/docker
+    repo: registry.megpoid.xyz/swarm-updater
+    registry: registry.megpoid.xyz
+    mirror: http://mirror:5000
+    secrets: [ docker_username, docker_password ]
+    build_args:
+    - BUILD_NUMBER=${DRONE_BUILD_NUMBER}
+    - BUILD_COMMIT_SHORT=${DRONE_COMMIT_SHA:0:8}
+    tags: [ latest ]
+
+  dockerhub:
+    image: plugins/docker
+    repo: codestation/swarm-updater
+    mirror: https://registry-proxy.megpoid.xyz
+    secrets:
+    - source: dockerhub_username
+      target: docker_username
+    - source: dockerhub_password
+      target: docker_password
+    tags: [ latest ]
+
+branches: master
