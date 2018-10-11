@@ -48,8 +48,12 @@ func (c *Swarm) isUpdater(service swarm.Service) bool {
 		log.Printf("Cannot inspect image of service %s", service.Spec.Name)
 	}
 
-	val, ok := image.Config.Labels[imageLabel]
-	return ok && val == "true"
+	if image.Config != nil {
+		val, ok := image.Config.Labels[imageLabel]
+		return ok && val == "true"
+	}
+
+	return false
 }
 
 func (c *Swarm) validService(service swarm.Service) bool {
