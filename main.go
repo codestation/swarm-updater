@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
@@ -26,22 +25,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/docker/cli/cli/command"
-	"github.com/docker/cli/cli/flags"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/swarm"
-	"github.com/docker/docker/client"
 	"github.com/robfig/cron"
 	"github.com/urfave/cli"
 )
-
-// DockerAPIMinVersion must use at least 1.30 for DistributionInspect support
-const DockerAPIMinVersion string = "1.30"
-
-// ServiceLabel is the label to check on docker services to see if it should be updated
-const ServiceLabel string = "xyz.megpoid.swarm-updater.enable"
-
-type serviceValidator func(service swarm.Service) bool
 
 var blacklist []string
 
@@ -54,93 +40,7 @@ var (
 	AppVersion = "0.1.0"
 )
 
-func getServiceValidator(c *cli.Context) serviceValidator {
-	if c.Bool("label-enable") {
-		return func(service swarm.Service) bool {
-			label := service.Spec.Labels[ServiceLabel]
-			return strings.ToLower(label) == "true"
-		}
-	}
-
-	return func(service swarm.Service) bool {
-		serviceName := service.Spec.Name
-		for _, entry := range blacklist {
-			if entry == serviceName {
-				return false
-			}
-		}
-		return true
-	}
-}
-
-func updateServices(validService serviceValidator) error {
-	ctx := context.Background()
-
-	dcli, err := client.NewClientWithOpts(client.FromEnv)
-	if err != nil {
-		return fmt.Errorf("failed to initialize docker client: %s", err.Error())
-	}
-
-	services, err := dcli.ServiceList(ctx, types.ServiceListOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to get service list: %s", err.Error())
-	}
-
-	//discard := ioutil.Discard
-	commcli := command.NewDockerCli(os.Stdin, os.Stdout, os.Stderr, false)
-	opts := flags.NewClientOptions()
-	commcli.Initialize(opts)
-
-	for _, service := range services {
-		if validService(service) {
-			image := service.Spec.TaskTemplate.ContainerSpec.Image
-
-			// get docker auth
-			encodedAuth, err := command.RetrieveAuthTokenFromImage(ctx, commcli, image)
-
-			if err != nil {
-				log.Printf("Cannot retrieve auth token from service %s", service.Spec.Name)
-			}
-
-			// remove image hash from name
-			imageName := strings.Split(image, "@sha")[0]
-			service.Spec.TaskTemplate.ContainerSpec.Image = imageName
-
-			response, err := dcli.ServiceUpdate(ctx, service.ID, service.Version,
-				service.Spec, types.ServiceUpdateOptions{EncodedRegistryAuth: encodedAuth, QueryRegistry: true})
-			if err != nil {
-				log.Printf("Cannot update service %s: %s", service.Spec.Name, err.Error())
-				continue
-			}
-
-			if len(response.Warnings) > 0 {
-				for _, warning := range response.Warnings {
-					log.Printf("response warning:\n%s", warning)
-				}
-			}
-
-			updatedService, _, err := dcli.ServiceInspectWithRaw(ctx, service.ID, types.ServiceInspectOptions{})
-			if err != nil {
-				log.Printf("Cannot inspect service %s to check update status: %s", service.Spec.Name, err.Error())
-				continue
-			}
-
-			previous := updatedService.PreviousSpec.TaskTemplate.ContainerSpec.Image
-			current := updatedService.Spec.TaskTemplate.ContainerSpec.Image
-
-			if previous == current {
-				log.Printf("No updates to service %s", service.Spec.Name)
-			} else {
-				log.Printf("Service %s updated to %s", service.Spec.Name, current)
-			}
-		}
-	}
-
-	return nil
-}
-
 func run(c *cli.Context) error {
-	validService := getServiceValidator(c)
 	var schedule string
 
 	if c.IsSet("schedule") {
@@ -149,18 +49,26 @@ func run(c *cli.Context) error {
 		schedule = "@every " + strconv.Itoa(c.Int("interval")) + "s"
 	}
 
+	swarm, err := NewSwarm()
+	if err != nil {
+		return fmt.Errorf("cannot instantiate new Docker swarm client: %s", err.Error())
+	}
+
+	swarm.LabelEnable = c.Bool("label-enable")
+	swarm.Blacklist = blacklist
+
 	tryLockSem := make(chan bool, 1)
 	tryLockSem <- true
 
 	cronService := cron.New()
-	err := cronService.AddFunc(
+	err = cronService.AddFunc(
 		schedule,
 		func() {
 			select {
 			case v := <-tryLockSem:
 				defer func() { tryLockSem <- v }()
-				if err := updateServices(validService); err != nil {
-					log.Printf("cannot update services: %s", err.Error())
+				if err := swarm.UpdateServices(); err != nil {
+					log.Printf("Cannot update services: %s", err.Error())
 				}
 			default:
 				log.Printf("Skipped service update. Already running")
@@ -173,7 +81,7 @@ func run(c *cli.Context) error {
 		})
 
 	if err != nil {
-		return fmt.Errorf("falied to setup cron: %s", err.Error())
+		return fmt.Errorf("failed to setup cron: %s", err.Error())
 	}
 
 	cronService.Start()
@@ -228,17 +136,17 @@ func main() {
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:   "host, H",
-			Usage:  "docker host",
-			Value:  "unix:///var/run/docker.sock",
+			Name:  "host, H",
+			Usage: "docker host",
+			Value: "unix:///var/run/docker.sock",
 		},
 		cli.BoolFlag{
-			Name:   "tlsverify, t",
-			Usage:  "use TLS and verify the server certificate",
+			Name:  "tlsverify, t",
+			Usage: "use TLS and verify the server certificate",
 		},
 		cli.StringFlag{
-			Name:   "config, c",
-			Usage:  "location of the docker config files",
+			Name:  "config, c",
+			Usage: "location of the docker config files",
 		},
 		cli.IntFlag{
 			Name:   "interval, i",
@@ -253,7 +161,7 @@ func main() {
 		},
 		cli.BoolFlag{
 			Name:   "label-enable, l",
-			Usage:  fmt.Sprintf("watch services where %s label is set to true", ServiceLabel),
+			Usage:  fmt.Sprintf("watch services where %s label is set to true", serviceLabel),
 			EnvVar: "LABEL_ENABLE",
 		},
 		cli.StringFlag{

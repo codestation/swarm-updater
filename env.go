@@ -23,6 +23,8 @@ import (
 	"github.com/urfave/cli"
 )
 
+const dockerAPIMinVersion string = "1.30"
+
 func setEnvOptStr(env string, opt string) error {
 	if opt != "" && opt != os.Getenv(env) {
 		err := os.Setenv(env, opt)
@@ -60,7 +62,7 @@ func envConfig(c *cli.Context) error {
 		return fmt.Errorf("failed to set environment DOCKER_TLS_VERIFY: %s", err.Error())
 	}
 
-	err = setEnvOptStr("DOCKER_API_VERSION", DockerAPIMinVersion)
+	err = setEnvOptStr("DOCKER_API_VERSION", dockerAPIMinVersion)
 	if err != nil {
 		return fmt.Errorf("failed to set environment DOCKER_API_VERSION: %s", err.Error())
 	}
