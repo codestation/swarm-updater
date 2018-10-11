@@ -15,6 +15,7 @@ RUN CGO_ENABLED=0 go install -mod vendor -ldflags "-w -s \
 
 FROM alpine:3.8
 LABEL maintainer="codestation <codestation404@gmail.com>"
+LABEL xyz.megpoid.swarm-updater="true"
 
 RUN apk add --no-cache ca-certificates
 

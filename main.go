@@ -39,7 +39,7 @@ import (
 const DockerAPIMinVersion string = "1.30"
 
 // ServiceLabel is the label to check on docker services to see if it should be updated
-const ServiceLabel string = "xyz.megpoid.swarm-updater"
+const ServiceLabel string = "xyz.megpoid.swarm-updater.enable"
 
 type serviceValidator func(service swarm.Service) bool
 
