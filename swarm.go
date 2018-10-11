@@ -145,13 +145,14 @@ func (c *Swarm) UpdateServices() error {
 		return fmt.Errorf("failed to get service list: %s", err.Error())
 	}
 
-	var updaterService *swarm.Service
+	var serviceId string
 
 	for _, service := range services {
 		if c.validService(service) {
 			// leave this service for last
 			if c.isUpdater(service) {
-				updaterService = &service
+				log.Printf("Delaying update of service %s", service.Spec.Name)
+				serviceId = service.ID
 				continue
 			}
 
@@ -159,11 +160,11 @@ func (c *Swarm) UpdateServices() error {
 		}
 	}
 
-	if updaterService != nil {
+	if serviceId != "" {
 		// refresh service
-		service, _, err := c.client.ServiceInspectWithRaw(c.ctx, updaterService.ID, types.ServiceInspectOptions{})
+		service, _, err := c.client.ServiceInspectWithRaw(c.ctx, serviceId, types.ServiceInspectOptions{})
 		if err != nil {
-			return fmt.Errorf("cannot inspect service %s: %s", service.Spec.Name, err.Error())
+			return fmt.Errorf("cannot inspect this service: %s", err.Error())
 		}
 
 		err = c.updateService(service)
