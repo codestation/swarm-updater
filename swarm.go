@@ -160,9 +160,15 @@ func (c *Swarm) UpdateServices() error {
 	}
 
 	if updaterService != nil {
-		err = c.updateService(*updaterService)
+		// refresh service
+		service, _, err := c.client.ServiceInspectWithRaw(c.ctx, updaterService.ID, types.ServiceInspectOptions{})
 		if err != nil {
-			return fmt.Errorf("failed to get service list: %s", err.Error())
+			return fmt.Errorf("cannot inspect service %s: %s", service.Spec.Name, err.Error())
+		}
+
+		err = c.updateService(service)
+		if err != nil {
+			return fmt.Errorf("failed to update this service: %s", err.Error())
 		}
 	}
 
