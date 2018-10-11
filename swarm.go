@@ -31,7 +31,7 @@ import (
 )
 
 const serviceLabel string = "xyz.megpoid.swarm-updater.enable"
-const containerLabel string = "xyz.megpoid.swarm-updater"
+const imageLabel string = "xyz.megpoid.swarm-updater"
 
 // Swarm struct to handle all the service operations
 type Swarm struct {
@@ -42,8 +42,13 @@ type Swarm struct {
 	LabelEnable bool
 }
 
-func isUpdater(service swarm.Service) bool {
-	val, ok := service.Spec.TaskTemplate.ContainerSpec.Labels[containerLabel]
+func (c *Swarm) isUpdater(service swarm.Service) bool {
+	image, _, err := c.client.ImageInspectWithRaw(c.ctx, service.Spec.TaskTemplate.ContainerSpec.Image)
+	if err != nil {
+		log.Printf("Cannot inspect image of service %s", service.Spec.Name)
+	}
+
+	val, ok := image.Config.Labels[imageLabel]
 	return ok && val == "true"
 }
 
@@ -141,7 +146,7 @@ func (c *Swarm) UpdateServices() error {
 	for _, service := range services {
 		if c.validService(service) {
 			// leave this service for last
-			if isUpdater(service) {
+			if c.isUpdater(service) {
 				updaterService = &service
 				continue
 			}
