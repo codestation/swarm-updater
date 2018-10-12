@@ -129,9 +129,7 @@ func (c *Swarm) updateService(service swarm.Service) error {
 	previous := updatedService.PreviousSpec.TaskTemplate.ContainerSpec.Image
 	current := updatedService.Spec.TaskTemplate.ContainerSpec.Image
 
-	if previous == current {
-		log.Printf("No updates to service %s", service.Spec.Name)
-	} else {
+	if previous != current {
 		log.Printf("Service %s updated to %s", service.Spec.Name, current)
 	}
 
