@@ -138,7 +138,6 @@ func (c *Swarm) UpdateServices() error {
 			imageName := reference.Path(namedRef)
 
 			if imageName == ImageName {
-				log.Printf("Delaying update of service %s", service.Spec.Name)
 				serviceID = service.ID
 				continue
 			}
