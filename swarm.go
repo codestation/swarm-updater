@@ -25,13 +25,13 @@ import (
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
+	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
 )
 
 const serviceLabel string = "xyz.megpoid.swarm-updater.enable"
-const imageLabel string = "xyz.megpoid.swarm-updater"
 
 // Swarm struct to handle all the service operations
 type Swarm struct {
@@ -40,20 +40,6 @@ type Swarm struct {
 	dockercli   *command.DockerCli
 	Blacklist   []string
 	LabelEnable bool
-}
-
-func (c *Swarm) isUpdater(service swarm.Service) bool {
-	image, _, err := c.client.ImageInspectWithRaw(c.ctx, service.Spec.TaskTemplate.ContainerSpec.Image)
-	if err != nil {
-		log.Printf("Cannot inspect image of service %s", service.Spec.Name)
-	}
-
-	if image.Config != nil {
-		val, ok := image.Config.Labels[imageLabel]
-		return ok && val == "true"
-	}
-
-	return false
 }
 
 func (c *Swarm) validService(service swarm.Service) bool {
@@ -147,8 +133,11 @@ func (c *Swarm) UpdateServices() error {
 
 	for _, service := range services {
 		if c.validService(service) {
-			// leave this service for last
-			if c.isUpdater(service) {
+			// try to identify this service, naive approach
+			namedRef, _ := reference.ParseNormalizedNamed(service.Spec.TaskTemplate.ContainerSpec.Image)
+			imageName := reference.Path(namedRef)
+
+			if imageName == ImageName {
 				log.Printf("Delaying update of service %s", service.Spec.Name)
 				serviceID = service.ID
 				continue

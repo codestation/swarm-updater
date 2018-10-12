@@ -38,6 +38,8 @@ var (
 	BuildCommit string
 	// AppVersion indicates the application version
 	AppVersion = "0.1.0"
+	// ImageName indicates this image name
+	ImageName string
 )
 
 func run(c *cli.Context) error {

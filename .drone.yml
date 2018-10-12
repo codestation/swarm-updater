@@ -22,6 +22,7 @@ pipeline:
     build_args:
     - BUILD_NUMBER=${DRONE_BUILD_NUMBER}
     - BUILD_COMMIT_SHORT=${DRONE_COMMIT_SHA:0:8}
+    - IMAGE_NAME=registry.megpoid.xyz/swarm-updater
     tags: [ latest ]
 
   dockerhub:
