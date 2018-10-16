@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -30,6 +31,7 @@ import (
 )
 
 var blacklist []string
+var blacklistRegex *regexp.Regexp
 
 var (
 	// BuildTime indicates the date when the binary was built (set by -ldflags)
@@ -58,6 +60,7 @@ func run(c *cli.Context) error {
 
 	swarm.LabelEnable = c.Bool("label-enable")
 	swarm.Blacklist = blacklist
+	swarm.BlacklistRegex = blacklistRegex
 
 	tryLockSem := make(chan bool, 1)
 	tryLockSem <- true
@@ -107,7 +110,7 @@ func initialize(c *cli.Context) error {
 		log.Fatal("Only schedule or interval can be defined, not both")
 	}
 
-	if c.Bool("label-enable") && c.IsSet("blacklist") {
+	if c.Bool("label-enable") && (c.IsSet("blacklist") || c.IsSet("blacklist-regex")) {
 		log.Fatal("Do not define a blacklist if label-enable is enabled")
 	}
 
@@ -120,6 +123,13 @@ func initialize(c *cli.Context) error {
 		blacklist = strings.Split(c.String("blacklist"), ",")
 		for i := range blacklist {
 			blacklist[i] = strings.TrimSpace(blacklist[i])
+		}
+	}
+
+	if c.IsSet("blacklist-regex") {
+		blacklistRegex, err = regexp.Compile(c.String("blacklist-regex"))
+		if err != nil {
+			return fmt.Errorf("failed to compile blacklist regex: %s", err.Error())
 		}
 	}
 
@@ -172,6 +182,11 @@ func main() {
 			Name:   "blacklist, b",
 			Usage:  "comma separated list of services to ignore",
 			EnvVar: "BLACKLIST",
+		},
+		cli.StringFlag{
+			Name:   "blacklist-regex, r",
+			Usage:  "regular expression to match service names to ignore",
+			EnvVar: "BLACKLIST_REGEX",
 		},
 	}
 
