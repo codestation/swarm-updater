@@ -19,7 +19,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -30,6 +29,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
+
+	"megpoid.xyz/go/swarm-updater/log"
 )
 
 const serviceLabel string = "xyz.megpoid.swarm-updater.enable"
@@ -120,6 +121,8 @@ func (c *Swarm) updateService(service swarm.Service) error {
 
 	if previous != current {
 		log.Printf("Service %s updated to %s", service.Spec.Name, current)
+	} else {
+		log.Debug("Service not updated: %s", service.Spec.Name)
 	}
 
 	return nil

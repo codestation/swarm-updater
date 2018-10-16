@@ -18,7 +18,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"regexp"
@@ -27,6 +26,8 @@ import (
 
 	"github.com/robfig/cron"
 	"github.com/urfave/cli"
+
+	"megpoid.xyz/go/swarm-updater/log"
 )
 
 var blacklist []*regexp.Regexp
@@ -116,8 +117,11 @@ func initialize(c *cli.Context) error {
 		return fmt.Errorf("failed to sync environment: %s", err.Error())
 	}
 
+	log.EnableDebug(c.Bool("debug"))
+
 	if c.IsSet("blacklist") {
-		for _, entry := range c.StringSlice("blacklist") {
+		list := c.StringSlice("blacklist")
+		for _, entry := range list {
 			regex, err := regexp.Compile(entry)
 			if err != nil {
 				return fmt.Errorf("failed to compile blacklist regex: %s", err.Error())
@@ -125,6 +129,8 @@ func initialize(c *cli.Context) error {
 
 			blacklist = append(blacklist, regex)
 		}
+
+		log.Debug("Compiled %d blacklist rules", len(list))
 	}
 
 	log.Printf("Starting swarm-updater %s", AppVersion)
@@ -176,6 +182,11 @@ func main() {
 			Name:   "blacklist, b",
 			Usage:  "regular expression to match service names to ignore",
 			EnvVar: "BLACKLIST",
+		},
+		cli.BoolFlag{
+			Name:   "debug, d",
+			Usage:  "enable debug logging",
+			EnvVar: "DEBUG",
 		},
 	}
 
