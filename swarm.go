@@ -36,12 +36,11 @@ const serviceLabel string = "xyz.megpoid.swarm-updater.enable"
 
 // Swarm struct to handle all the service operations
 type Swarm struct {
-	ctx            context.Context
-	client         *client.Client
-	dockercli      *command.DockerCli
-	Blacklist      []string
-	BlacklistRegex *regexp.Regexp
-	LabelEnable    bool
+	ctx         context.Context
+	client      *client.Client
+	dockercli   *command.DockerCli
+	Blacklist   []*regexp.Regexp
+	LabelEnable bool
 }
 
 func (c *Swarm) validService(service swarm.Service) bool {
@@ -52,14 +51,8 @@ func (c *Swarm) validService(service swarm.Service) bool {
 
 	serviceName := service.Spec.Name
 
-	if c.BlacklistRegex != nil {
-		if c.BlacklistRegex.MatchString(serviceName) {
-			return false
-		}
-	}
-
-	for _, entry := range blacklist {
-		if entry == serviceName {
+	for _, entry := range c.Blacklist {
+		if entry.MatchString(serviceName) {
 			return false
 		}
 	}

@@ -23,15 +23,13 @@ import (
 	"os/signal"
 	"regexp"
 	"strconv"
-	"strings"
 	"syscall"
 
 	"github.com/robfig/cron"
 	"github.com/urfave/cli"
 )
 
-var blacklist []string
-var blacklistRegex *regexp.Regexp
+var blacklist []*regexp.Regexp
 
 var (
 	// BuildTime indicates the date when the binary was built (set by -ldflags)
@@ -60,7 +58,6 @@ func run(c *cli.Context) error {
 
 	swarm.LabelEnable = c.Bool("label-enable")
 	swarm.Blacklist = blacklist
-	swarm.BlacklistRegex = blacklistRegex
 
 	tryLockSem := make(chan bool, 1)
 	tryLockSem <- true
@@ -120,16 +117,13 @@ func initialize(c *cli.Context) error {
 	}
 
 	if c.IsSet("blacklist") {
-		blacklist = strings.Split(c.String("blacklist"), ",")
-		for i := range blacklist {
-			blacklist[i] = strings.TrimSpace(blacklist[i])
-		}
-	}
+		for _, entry := range c.StringSlice("blacklist") {
+			regex, err := regexp.Compile(entry)
+			if err != nil {
+				return fmt.Errorf("failed to compile blacklist regex: %s", err.Error())
+			}
 
-	if c.IsSet("blacklist-regex") {
-		blacklistRegex, err = regexp.Compile(c.String("blacklist-regex"))
-		if err != nil {
-			return fmt.Errorf("failed to compile blacklist regex: %s", err.Error())
+			blacklist = append(blacklist, regex)
 		}
 	}
 
@@ -178,15 +172,10 @@ func main() {
 			Usage:  fmt.Sprintf("watch services where %s label is set to true", serviceLabel),
 			EnvVar: "LABEL_ENABLE",
 		},
-		cli.StringFlag{
+		cli.StringSliceFlag{
 			Name:   "blacklist, b",
-			Usage:  "comma separated list of services to ignore",
-			EnvVar: "BLACKLIST",
-		},
-		cli.StringFlag{
-			Name:   "blacklist-regex, r",
 			Usage:  "regular expression to match service names to ignore",
-			EnvVar: "BLACKLIST_REGEX",
+			EnvVar: "BLACKLIST",
 		},
 	}
 
