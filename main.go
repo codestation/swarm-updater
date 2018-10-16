@@ -76,9 +76,11 @@ func run(c *cli.Context) error {
 				log.Printf("Skipped service update. Already running")
 			}
 
-			nextRuns := cronService.Entries()
-			if len(nextRuns) > 0 {
-				log.Printf("Scheduled next run: " + nextRuns[0].Next.String())
+			if c.IsSet("schedule") {
+				nextRuns := cronService.Entries()
+				if len(nextRuns) > 0 {
+					log.Printf("Scheduled next run: " + nextRuns[0].Next.String())
+				}
 			}
 		})
 
