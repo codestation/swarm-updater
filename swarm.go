@@ -107,7 +107,7 @@ func (c *Swarm) updateService(service swarm.Service) error {
 
 	if len(response.Warnings) > 0 {
 		for _, warning := range response.Warnings {
-			log.Printf("response warning:\n%s", warning)
+			log.Debug("response warning:\n%s", warning)
 		}
 	}
 
@@ -122,7 +122,7 @@ func (c *Swarm) updateService(service swarm.Service) error {
 	if previous != current {
 		log.Printf("Service %s updated to %s", service.Spec.Name, current)
 	} else {
-		log.Debug("Service not updated: %s", service.Spec.Name)
+		log.Debug("Service %s is up to date", service.Spec.Name)
 	}
 
 	return nil
@@ -141,14 +141,16 @@ func (c *Swarm) UpdateServices() error {
 		if c.validService(service) {
 			// try to identify this service, naive approach
 			namedRef, _ := reference.ParseNormalizedNamed(service.Spec.TaskTemplate.ContainerSpec.Image)
-			imageName := reference.Path(namedRef)
+			currentImageName := reference.Path(namedRef)
 
-			if imageName == ImageName {
+			if currentImageName == ImageName {
 				serviceID = service.ID
 				continue
 			}
 
 			c.updateService(service)
+		} else {
+			log.Debug("Service %s was ignored by blacklist or missing label", service.Spec.Name)
 		}
 	}
 

@@ -77,17 +77,17 @@ func run(c *cli.Context) error {
 				log.Printf("Skipped service update. Already running")
 			}
 
-			if c.IsSet("schedule") {
-				nextRuns := cronService.Entries()
-				if len(nextRuns) > 0 {
-					log.Printf("Scheduled next run: " + nextRuns[0].Next.String())
-				}
+			nextRuns := cronService.Entries()
+			if len(nextRuns) > 0 {
+				log.Debug("Scheduled next run: " + nextRuns[0].Next.String())
 			}
 		})
 
 	if err != nil {
 		return fmt.Errorf("failed to setup cron: %s", err.Error())
 	}
+
+	log.Debug("Configured cron schedule: %s", schedule)
 
 	cronService.Start()
 
@@ -112,6 +112,13 @@ func initialize(c *cli.Context) error {
 		log.Fatal("Do not define a blacklist if label-enable is enabled")
 	}
 
+	log.Printf("Starting swarm-updater %s", AppVersion)
+
+	if len(BuildTime) > 0 {
+		log.Printf("Build Time: %s", BuildTime)
+		log.Printf("Build Commit: %s", BuildCommit)
+	}
+
 	err := envConfig(c)
 	if err != nil {
 		return fmt.Errorf("failed to sync environment: %s", err.Error())
@@ -131,13 +138,6 @@ func initialize(c *cli.Context) error {
 		}
 
 		log.Debug("Compiled %d blacklist rules", len(list))
-	}
-
-	log.Printf("Starting swarm-updater %s", AppVersion)
-
-	if len(BuildTime) > 0 {
-		log.Printf("Build Time: %s", BuildTime)
-		log.Printf("Build Commit: %s", BuildCommit)
 	}
 
 	return nil
