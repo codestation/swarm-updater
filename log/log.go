@@ -18,19 +18,26 @@ package log
 
 import "log"
 
-var Printf = log.Printf
-var Info = log.Print
+// Println calls Output to print to the standard logger.
 var Println = log.Println
+// Fatal is equivalent to Print() followed by a call to os.Exit(1).
 var Fatal = log.Fatal
+// Fatalf is equivalent to Printf() followed by a call to os.Exit(1).
 var Fatalf = log.Fatalf
-var Debug = emptyFunc
+// Printf calls Output to print to the standard logger.
+var Printf = log.Printf
+// Debug calls Output to print to the standard logger if enabled.
+var Debug = nullLogger
 
-var emptyFunc = func(format string, v ...interface{}) {}
+func nullLogger(_ string, _ ...interface{}) {
+	// no-op
+}
 
+// EnableDebug show/hides debug logs
 func EnableDebug(debug bool) {
 	if debug {
 		Debug = log.Printf
 	} else {
-		Debug = emptyFunc
+		Debug = nullLogger
 	}
 }
