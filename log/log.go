@@ -20,12 +20,16 @@ import "log"
 
 // Println calls Output to print to the standard logger.
 var Println = log.Println
+
 // Fatal is equivalent to Print() followed by a call to os.Exit(1).
 var Fatal = log.Fatal
+
 // Fatalf is equivalent to Printf() followed by a call to os.Exit(1).
 var Fatalf = log.Fatalf
+
 // Printf calls Output to print to the standard logger.
 var Printf = log.Printf
+
 // Debug calls Output to print to the standard logger if enabled.
 var Debug = nullLogger
 

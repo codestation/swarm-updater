@@ -60,6 +60,7 @@ require (
 	github.com/spf13/cobra v0.0.3 // indirect
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/spf13/viper v1.2.1 // indirect
+	github.com/stretchr/testify v1.2.2
 	github.com/theupdateframework/notary v0.6.1 // indirect
 	github.com/urfave/cli v1.20.0
 	golang.org/x/crypto v0.0.0-20181015023909-0c41d7ab0a0e // indirect

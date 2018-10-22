@@ -37,9 +37,7 @@ const serviceLabel string = "xyz.megpoid.swarm-updater.enable"
 
 // Swarm struct to handle all the service operations
 type Swarm struct {
-	ctx         context.Context
-	client      *client.Client
-	dockercli   *command.DockerCli
+	client      DockerClient
 	Blacklist   []*regexp.Regexp
 	LabelEnable bool
 }
@@ -64,20 +62,20 @@ func (c *Swarm) validService(service swarm.Service) bool {
 // NewSwarm instantiates a new Docker swarm client
 func NewSwarm() (*Swarm, error) {
 	ctx := context.Background()
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv)
+
+	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize docker client: %s", err.Error())
 	}
 
 	dockerCli := command.NewDockerCli(os.Stdin, os.Stdout, os.Stderr, false)
-	opts := flags.NewClientOptions()
-	dockerCli.Initialize(opts)
+	dockerCli.Initialize(flags.NewClientOptions())
 
-	return &Swarm{ctx: ctx, client: dockerClient, dockercli: dockerCli}, nil
+	return &Swarm{client: &dockerClient{client: cli, ctx: ctx, cli: dockerCli}}, nil
 }
 
 func (c *Swarm) serviceList() ([]swarm.Service, error) {
-	services, err := c.client.ServiceList(c.ctx, types.ServiceListOptions{})
+	services, err := c.client.ServiceList(types.ServiceListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("ServiceList: %s", err.Error())
 	}
@@ -89,8 +87,7 @@ func (c *Swarm) updateService(service swarm.Service) error {
 	image := service.Spec.TaskTemplate.ContainerSpec.Image
 
 	// get docker auth
-	encodedAuth, err := command.RetrieveAuthTokenFromImage(c.ctx, c.dockercli, image)
-
+	encodedAuth, err := c.client.RetrieveAuthTokenFromImage(image)
 	if err != nil {
 		return fmt.Errorf("cannot retrieve auth token from service's image %s", service.Spec.Name)
 	}
@@ -99,7 +96,7 @@ func (c *Swarm) updateService(service swarm.Service) error {
 	imageName := strings.Split(image, "@sha")[0]
 	service.Spec.TaskTemplate.ContainerSpec.Image = imageName
 
-	response, err := c.client.ServiceUpdate(c.ctx, service.ID, service.Version,
+	response, err := c.client.ServiceUpdate(service.ID, service.Version,
 		service.Spec, types.ServiceUpdateOptions{EncodedRegistryAuth: encodedAuth, QueryRegistry: true})
 	if err != nil {
 		return fmt.Errorf("cannot update service %s: %s", service.Spec.Name, err.Error())
@@ -111,7 +108,7 @@ func (c *Swarm) updateService(service swarm.Service) error {
 		}
 	}
 
-	updatedService, _, err := c.client.ServiceInspectWithRaw(c.ctx, service.ID, types.ServiceInspectOptions{})
+	updatedService, _, err := c.client.ServiceInspectWithRaw(service.ID, types.ServiceInspectOptions{})
 	if err != nil {
 		return fmt.Errorf("cannot inspect service %s to check update status: %s", service.Spec.Name, err.Error())
 	}
@@ -156,7 +153,7 @@ func (c *Swarm) UpdateServices() error {
 
 	if serviceID != "" {
 		// refresh service
-		service, _, err := c.client.ServiceInspectWithRaw(c.ctx, serviceID, types.ServiceInspectOptions{})
+		service, _, err := c.client.ServiceInspectWithRaw(serviceID, types.ServiceInspectOptions{})
 		if err != nil {
 			return fmt.Errorf("cannot inspect this service: %s", err.Error())
 		}

@@ -12,6 +12,8 @@ github.com/agl/ed25519/edwards25519
 github.com/beorn7/perks/quantile
 # github.com/containerd/continuity v0.0.0-20181003075958-be9bd761db19
 github.com/containerd/continuity/pathdriver
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
 # github.com/docker/cli v0.0.0-20180814145437-67f9a3912cf9
 github.com/docker/cli/cli/command
 github.com/docker/cli/cli/flags
@@ -111,6 +113,8 @@ github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/runc/libcontainer/user
 # github.com/pkg/errors v0.8.0
 github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
 # github.com/prometheus/client_golang v0.9.0
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/promhttp
@@ -134,6 +138,8 @@ github.com/sirupsen/logrus
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.3
 github.com/spf13/pflag
+# github.com/stretchr/testify v1.2.2
+github.com/stretchr/testify/assert
 # github.com/theupdateframework/notary v0.6.1
 github.com/theupdateframework/notary
 github.com/theupdateframework/notary/client
