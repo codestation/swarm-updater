@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"megpoid.xyz/go/swarm-updater/log"
 	"regexp"
 	"testing"
+
+	"megpoid.xyz/go/swarm-updater/log"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
