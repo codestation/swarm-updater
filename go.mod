@@ -1,8 +1,7 @@
 module megpoid.xyz/go/swarm-updater
 
-replace github.com/docker/docker v1.13.1 => github.com/docker/engine v0.0.0-20180816081446-320063a2ad06
-
 require (
+	cloud.google.com/go v0.31.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/Microsoft/go-winio v0.4.11 // indirect
@@ -16,10 +15,10 @@ require (
 	github.com/bugsnag/bugsnag-go v1.3.2 // indirect
 	github.com/bugsnag/panicwrap v1.2.0 // indirect
 	github.com/cenkalti/backoff v2.0.0+incompatible // indirect
-	github.com/cloudflare/cfssl v0.0.0-20181015163521-0b5b47f07c89 // indirect
-	github.com/containerd/continuity v0.0.0-20181003075958-be9bd761db19 // indirect
+	github.com/cloudflare/cfssl v0.0.0-20181022001934-00198453225d // indirect
+	github.com/containerd/continuity v0.0.0-20181027224239-bea7585dbfac // indirect
 	github.com/denisenkom/go-mssqldb v0.0.0-20181014144952-4e0d7dc8888f // indirect
-	github.com/docker/cli v0.0.0-20180814145437-67f9a3912cf9
+	github.com/docker/cli v0.0.0-20181026144139-6b71e84ec8bf
 	github.com/docker/distribution v2.7.0-rc.0+incompatible
 	github.com/docker/docker v1.13.1
 	github.com/docker/docker-credential-helpers v0.6.1 // indirect
@@ -41,37 +40,47 @@ require (
 	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a // indirect
 	github.com/jinzhu/now v0.0.0-20180511015916-ed742868f2ae // indirect
 	github.com/kardianos/osext v0.0.0-20170510131534-ae77be60afb1 // indirect
-	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/lib/pq v1.0.0 // indirect
-	github.com/mattn/go-sqlite3 v1.9.0 // indirect
+	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
-	github.com/miekg/pkcs11 v0.0.0-20181002074154-c6d6ee821fb1 // indirect
+	github.com/miekg/pkcs11 v0.0.0-20181023194645-95e2e42e3ece // indirect
+	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v0.1.1 // indirect
 	github.com/pkg/errors v0.8.0 // indirect
 	github.com/prometheus/client_golang v0.9.0 // indirect
 	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910 // indirect
-	github.com/prometheus/common v0.0.0-20181015124227-bcb74de08d37 // indirect
+	github.com/prometheus/common v0.0.0-20181020173914-7e9e6cabbd39 // indirect
 	github.com/prometheus/procfs v0.0.0-20181005140218-185b4288413d // indirect
 	github.com/robfig/cron v0.0.0-20180505203441-b41be1df6967
-	github.com/sirupsen/logrus v1.1.1 // indirect
+	github.com/sirupsen/logrus v1.2.0 // indirect
+	github.com/spf13/cast v1.3.0 // indirect
 	github.com/spf13/cobra v0.0.3 // indirect
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/spf13/viper v1.2.1 // indirect
 	github.com/stretchr/testify v1.2.2
 	github.com/theupdateframework/notary v0.6.1 // indirect
 	github.com/urfave/cli v1.20.0
-	golang.org/x/crypto v0.0.0-20181015023909-0c41d7ab0a0e // indirect
-	golang.org/x/lint v0.0.0-20181011164241-5906bd5c48cd
-	golang.org/x/net v0.0.0-20181011144130-49bb7cea24b1 // indirect
-	golang.org/x/sys v0.0.0-20181011152604-fa43e7bc11ba // indirect
+	golang.org/x/crypto v0.0.0-20181030102418-4d3f4d9ffa16 // indirect
+	golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3
+	golang.org/x/net v0.0.0-20181029044818-c44066c5c816 // indirect
+	golang.org/x/sys v0.0.0-20181031143558-9b800f95dbbc // indirect
 	golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2 // indirect
-	golang.org/x/tools v0.0.0-20181016152912-4fd33079060a // indirect
-	google.golang.org/grpc v1.15.0 // indirect
+	golang.org/x/tools v0.0.0-20181101071927-45ff765b4815 // indirect
+	google.golang.org/appengine v1.3.0 // indirect
+	google.golang.org/genproto v0.0.0-20181029155118-b69ba1387ce2 // indirect
+	google.golang.org/grpc v1.16.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/dancannon/gorethink.v3 v3.0.5 // indirect
 	gopkg.in/fatih/pool.v2 v2.0.0 // indirect
 	gopkg.in/gorethink/gorethink.v3 v3.0.5 // indirect
 	gotest.tools v2.1.0+incompatible // indirect
 )
+
+// github.com/docker/engine v18.06.1-ce
+replace github.com/docker/docker => github.com/docker/engine v0.0.0-20180816081446-320063a2ad06
+
+// github.com/docker/cli v18.06.1-ce
+replace github.com/docker/cli => github.com/docker/cli v0.0.0-20180814145437-67f9a3912cf9
