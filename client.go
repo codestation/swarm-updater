@@ -18,23 +18,22 @@ type DockerClient interface {
 }
 
 type dockerClient struct {
-	client *client.Client
-	ctx    context.Context
-	cli    *command.DockerCli
+	apiClient *client.Client
+	dockerCli *command.DockerCli
 }
 
 func (c *dockerClient) RetrieveAuthTokenFromImage(image string) (string, error) {
-	return command.RetrieveAuthTokenFromImage(c.ctx, c.cli, image)
+	return command.RetrieveAuthTokenFromImage(context.Background(), c.dockerCli, image)
 }
 
 func (c *dockerClient) ServiceUpdate(serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error) {
-	return c.client.ServiceUpdate(c.ctx, serviceID, version, service, options)
+	return c.apiClient.ServiceUpdate(context.Background(), serviceID, version, service, options)
 }
 
 func (c *dockerClient) ServiceInspectWithRaw(serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error) {
-	return c.client.ServiceInspectWithRaw(c.ctx, serviceID, opts)
+	return c.apiClient.ServiceInspectWithRaw(context.Background(), serviceID, opts)
 }
 
 func (c *dockerClient) ServiceList(options types.ServiceListOptions) ([]swarm.Service, error) {
-	return c.client.ServiceList(c.ctx, options)
+	return c.apiClient.ServiceList(context.Background(), options)
 }

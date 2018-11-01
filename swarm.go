@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"regexp"
@@ -61,8 +60,6 @@ func (c *Swarm) validService(service swarm.Service) bool {
 
 // NewSwarm instantiates a new Docker swarm client
 func NewSwarm() (*Swarm, error) {
-	ctx := context.Background()
-
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize docker client: %s", err.Error())
@@ -71,7 +68,7 @@ func NewSwarm() (*Swarm, error) {
 	dockerCli := command.NewDockerCli(os.Stdin, os.Stdout, os.Stderr, false)
 	dockerCli.Initialize(flags.NewClientOptions())
 
-	return &Swarm{client: &dockerClient{client: cli, ctx: ctx, cli: dockerCli}}, nil
+	return &Swarm{client: &dockerClient{apiClient: cli, dockerCli: dockerCli}}, nil
 }
 
 func (c *Swarm) serviceList() ([]swarm.Service, error) {
@@ -85,6 +82,7 @@ func (c *Swarm) serviceList() ([]swarm.Service, error) {
 
 func (c *Swarm) updateService(service swarm.Service) error {
 	image := service.Spec.TaskTemplate.ContainerSpec.Image
+	updateOpts := types.ServiceUpdateOptions{QueryRegistry: true}
 
 	// get docker auth
 	encodedAuth, err := c.client.RetrieveAuthTokenFromImage(image)
@@ -92,20 +90,22 @@ func (c *Swarm) updateService(service swarm.Service) error {
 		return fmt.Errorf("cannot retrieve auth token from service's image %s", service.Spec.Name)
 	}
 
+	// do not set auth if is an empty json object
+	if encodedAuth != "e30=" {
+		updateOpts.EncodedRegistryAuth = encodedAuth
+	}
+
 	// remove image hash from name
 	imageName := strings.Split(image, "@sha")[0]
 	service.Spec.TaskTemplate.ContainerSpec.Image = imageName
 
-	response, err := c.client.ServiceUpdate(service.ID, service.Version,
-		service.Spec, types.ServiceUpdateOptions{EncodedRegistryAuth: encodedAuth, QueryRegistry: true})
+	response, err := c.client.ServiceUpdate(service.ID, service.Version, service.Spec, updateOpts)
 	if err != nil {
 		return fmt.Errorf("cannot update service %s: %s", service.Spec.Name, err.Error())
 	}
 
-	if len(response.Warnings) > 0 {
-		for _, warning := range response.Warnings {
-			log.Debug("response warning:\n%s", warning)
-		}
+	for _, warning := range response.Warnings {
+		log.Debug("response warning:\n%s", warning)
 	}
 
 	updatedService, _, err := c.client.ServiceInspectWithRaw(service.ID, types.ServiceInspectOptions{})
