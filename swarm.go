@@ -82,7 +82,7 @@ func (c *Swarm) serviceList() ([]swarm.Service, error) {
 
 func (c *Swarm) updateService(service swarm.Service) error {
 	image := service.Spec.TaskTemplate.ContainerSpec.Image
-	updateOpts := types.ServiceUpdateOptions{QueryRegistry: true}
+	updateOpts := types.ServiceUpdateOptions{}
 
 	// get docker auth
 	encodedAuth, err := c.client.RetrieveAuthTokenFromImage(image)
@@ -97,7 +97,17 @@ func (c *Swarm) updateService(service swarm.Service) error {
 
 	// remove image hash from name
 	imageName := strings.Split(image, "@sha")[0]
-	service.Spec.TaskTemplate.ContainerSpec.Image = imageName
+
+	// fetch a newer image digest
+	service.Spec.TaskTemplate.ContainerSpec.Image, err = c.getImageDigest(imageName, updateOpts.EncodedRegistryAuth)
+	if err != nil {
+		return fmt.Errorf("failed to get new image digest: %s", err.Error())
+	}
+
+	if image == service.Spec.TaskTemplate.ContainerSpec.Image {
+		log.Debug("Service %s is already up to date", service.Spec.Name)
+		return nil
+	}
 
 	response, err := c.client.ServiceUpdate(service.ID, service.Version, service.Spec, updateOpts)
 	if err != nil {
@@ -165,4 +175,28 @@ func (c *Swarm) UpdateServices() error {
 	}
 
 	return nil
+}
+
+func (c *Swarm) getImageDigest(image, encodedAuth string) (string, error) {
+	namedRef, err := reference.ParseNormalizedNamed(image)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse image name: %s", err.Error())
+	}
+
+	if _, isCanonical := namedRef.(reference.Canonical); isCanonical {
+		return "", fmt.Errorf("the image name already have a digest")
+	}
+
+	distributionInspect, err := c.client.DistributionInspect(image, encodedAuth)
+	if err != nil {
+		return "", fmt.Errorf("failed to inspect image: %s", err.Error())
+	}
+
+	// ensure that image gets a default tag if none is provided
+	img, err := reference.WithDigest(namedRef, distributionInspect.Descriptor.Digest)
+	if err != nil {
+		return "", fmt.Errorf("the image name has an invalid format: %s", err.Error())
+	}
+
+	return reference.FamiliarString(img), nil
 }

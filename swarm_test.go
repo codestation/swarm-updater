@@ -8,15 +8,25 @@ import (
 	"megpoid.xyz/go/swarm-updater/log"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/api/types/swarm"
 	test "github.com/stretchr/testify/assert"
 )
 
 type dockerClientMock struct {
+	DistributionInspectFn        func(image, encodedAuth string) (registry.DistributionInspect, error)
 	RetrieveAuthTokenFromImageFn func(image string) (string, error)
 	ServiceUpdateFn              func(serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error)
 	ServiceInspectWithRawFn      func(serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error)
 	ServiceListFn                func(options types.ServiceListOptions) ([]swarm.Service, error)
+}
+
+func (s *dockerClientMock) DistributionInspect(image, encodedAuth string) (registry.DistributionInspect, error) {
+	if s.DistributionInspectFn != nil {
+		return s.DistributionInspectFn(image, encodedAuth)
+	}
+
+	return registry.DistributionInspect{}, nil
 }
 
 func (s *dockerClientMock) RetrieveAuthTokenFromImage(image string) (string, error) {
