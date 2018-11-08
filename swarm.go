@@ -155,7 +155,9 @@ func (c *Swarm) UpdateServices() error {
 				continue
 			}
 
-			c.updateService(service)
+			if err = c.updateService(service); err != nil {
+				log.Printf("Cannot update service %s: %s", service.Spec.Name, err.Error())
+			}
 		} else {
 			log.Debug("Service %s was ignored by blacklist or missing label", service.Spec.Name)
 		}
