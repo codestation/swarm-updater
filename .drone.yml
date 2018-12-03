@@ -1,42 +1,46 @@
-workspace:
-  base: /go
-  path: src/megpoid.xyz/go/swarm-updater
+kind: pipeline
+name: default
 
-pipeline:
-  test:
-    image: golang:1.11
-    commands:
-    - go install -mod vendor golang.org/x/lint/golint
-    - go vet -mod vendor ./...
-    - go test -mod vendor -v ./...
-    - golint -set_exit_status `find . -type d -not -path "./vendor*" -not -path "./.git*"`
+steps:
+- name: test
+  image: golang:1.11
+  commands:
+  - go install -mod vendor golang.org/x/lint/golint
+  - go vet -mod vendor ./...
+  - go test -mod vendor -v ./...
+  - golint -set_exit_status `find . -type d -not -path "./vendor*" -not -path "./.git*"`
+  settings:
     environment:
     - GO111MODULE=on
 
-  publish:
-    image: plugins/docker
+- name: build
+  image: plugins/docker
+  settings:
     repo: registry.megpoid.xyz/swarm-updater
+    tags: latest
     registry: registry.megpoid.xyz
     mirror: http://mirror:5000
-    secrets: [ docker_username, docker_password ]
     build_args:
-    - BUILD_NUMBER=${DRONE_BUILD_NUMBER}
-    - BUILD_COMMIT_SHORT=${DRONE_COMMIT_SHA:0:8}
+    - GIT_COMMIT_SHA=${DRONE_COMMIT_SHA}
+    - GIT_COMMIT_SHA_SHORT=${DRONE_COMMIT_SHA:0:8}
     - IMAGE_NAME=registry.megpoid.xyz/swarm-updater
-    tags: [ latest ]
+    username: megpoid
+    password:
+      from_secret: docker_password
 
-  dockerhub:
-    image: plugins/docker
+- name: dockerhub
+  image: plugins/docker
+  settings:
     repo: codestation/swarm-updater
+    tags: latest
     mirror: http://mirror:5000
-    secrets:
-    - source: dockerhub_username
-      target: docker_username
-    - source: dockerhub_password
-      target: docker_password
     build_args:
-    - BUILD_NUMBER=${DRONE_BUILD_NUMBER}
-    - BUILD_COMMIT_SHORT=${DRONE_COMMIT_SHA:0:8}
-    tags: [ latest ]
+    - GIT_COMMIT_SHA=${DRONE_COMMIT_SHA}
+    - GIT_COMMIT_SHA_SHORT=${DRONE_COMMIT_SHA:0:8}
+    username: codestation
+    password:
+      from_secret: dockerhub_password
 
-branches: master
+trigger:
+  branch:
+  - master

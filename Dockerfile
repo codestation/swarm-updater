@@ -4,11 +4,12 @@ ARG BUILD_NUMBER=0
 ARG BUILD_COMMIT_SHORT=unknown
 ARG IMAGE_NAME=codestation/swarm-updater
 ENV GO111MODULE=on
+ENV CGO_ENABLED=0
 
 WORKDIR /app
 COPY . .
 
-RUN CGO_ENABLED=0 go install -mod vendor -ldflags "-w -s \
+RUN go install -mod vendor -ldflags "-w -s \
    -X main.AppVersion=0.1.${BUILD_NUMBER} \
    -X main.BuildCommit=${BUILD_COMMIT_SHORT} \
    -X main.ImageName=${IMAGE_NAME} \
