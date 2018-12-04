@@ -17,9 +17,9 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
 
@@ -49,22 +49,22 @@ func envConfig(c *cli.Context) error {
 
 	err = setEnvOptStr("DOCKER_HOST", c.String("host"))
 	if err != nil {
-		return fmt.Errorf("failed to set environment DOCKER_HOST: %s", err.Error())
+		return errors.Wrap(err, "failed to set environment DOCKER_HOST")
 	}
 
 	err = setEnvOptStr("DOCKER_CONFIG", c.String("config"))
 	if err != nil {
-		return fmt.Errorf("failed to set environment DOCKER_CONFIG: %s", err.Error())
+		return errors.Wrap(err, "failed to set environment DOCKER_CONFIG")
 	}
 
 	err = setEnvOptBool("DOCKER_TLS_VERIFY", c.Bool("tlsverify"))
 	if err != nil {
-		return fmt.Errorf("failed to set environment DOCKER_TLS_VERIFY: %s", err.Error())
+		return errors.Wrap(err, "failed to set environment DOCKER_TLS_VERIFY")
 	}
 
 	err = setEnvOptStr("DOCKER_API_VERSION", dockerAPIMinVersion)
 	if err != nil {
-		return fmt.Errorf("failed to set environment DOCKER_API_VERSION: %s", err.Error())
+		return errors.Wrap(err, "failed to set environment DOCKER_API_VERSION")
 	}
 
 	return err

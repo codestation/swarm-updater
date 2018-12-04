@@ -19,12 +19,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/signal"
 	"regexp"
 	"strconv"
-	"syscall"
 
-	"github.com/robfig/cron"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 
 	"megpoid.xyz/go/swarm-updater/log"
@@ -52,55 +50,7 @@ func run(c *cli.Context) error {
 		schedule = "@every " + strconv.Itoa(c.Int("interval")) + "s"
 	}
 
-	swarm, err := NewSwarm()
-	if err != nil {
-		return fmt.Errorf("cannot instantiate new Docker swarm client: %s", err.Error())
-	}
-
-	swarm.LabelEnable = c.Bool("label-enable")
-	swarm.Blacklist = blacklist
-
-	tryLockSem := make(chan bool, 1)
-	tryLockSem <- true
-
-	cronService := cron.New()
-	err = cronService.AddFunc(
-		schedule,
-		func() {
-			select {
-			case v := <-tryLockSem:
-				defer func() { tryLockSem <- v }()
-				if err := swarm.UpdateServices(); err != nil {
-					log.Printf("Cannot update services: %s", err.Error())
-				}
-			default:
-				log.Printf("Skipped service update. Already running")
-			}
-
-			nextRuns := cronService.Entries()
-			if len(nextRuns) > 0 {
-				log.Debug("Scheduled next run: " + nextRuns[0].Next.String())
-			}
-		})
-
-	if err != nil {
-		return fmt.Errorf("failed to setup cron: %s", err.Error())
-	}
-
-	log.Debug("Configured cron schedule: %s", schedule)
-
-	cronService.Start()
-
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
-	signal.Notify(interrupt, syscall.SIGTERM)
-
-	<-interrupt
-	cronService.Stop()
-	log.Println("Waiting for running update to be finished...")
-	<-tryLockSem
-
-	return nil
+	return runCron(schedule, c.Bool("label-enable"))
 }
 
 func initialize(c *cli.Context) error {
@@ -121,7 +71,7 @@ func initialize(c *cli.Context) error {
 
 	err := envConfig(c)
 	if err != nil {
-		return fmt.Errorf("failed to sync environment: %s", err.Error())
+		return errors.Wrap(err, "failed to sync environment")
 	}
 
 	log.EnableDebug(c.Bool("debug"))
@@ -131,7 +81,7 @@ func initialize(c *cli.Context) error {
 		for _, entry := range list {
 			regex, err := regexp.Compile(entry)
 			if err != nil {
-				return fmt.Errorf("failed to compile blacklist regex: %s", err.Error())
+				return errors.Wrap(err, "failed to compile blacklist regex")
 			}
 
 			blacklist = append(blacklist, regex)

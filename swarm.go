@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -28,6 +27,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
+	"github.com/pkg/errors"
 
 	"megpoid.xyz/go/swarm-updater/log"
 )
@@ -62,11 +62,13 @@ func (c *Swarm) validService(service swarm.Service) bool {
 func NewSwarm() (*Swarm, error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize docker client: %s", err.Error())
+		return nil, errors.Wrap(err, "failed to initialize docker client")
 	}
 
 	dockerCli := command.NewDockerCli(os.Stdin, os.Stdout, os.Stderr, false)
-	dockerCli.Initialize(flags.NewClientOptions())
+	if err = dockerCli.Initialize(flags.NewClientOptions()); err != nil {
+		return nil, errors.Wrap(err, "failed to initialize docker cli")
+	}
 
 	return &Swarm{client: &dockerClient{apiClient: cli, dockerCli: dockerCli}}, nil
 }
@@ -74,7 +76,7 @@ func NewSwarm() (*Swarm, error) {
 func (c *Swarm) serviceList() ([]swarm.Service, error) {
 	services, err := c.client.ServiceList(types.ServiceListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("ServiceList: %s", err.Error())
+		return nil, errors.Wrap(err, "ServiceList failed")
 	}
 
 	return services, nil
@@ -87,7 +89,7 @@ func (c *Swarm) updateService(service swarm.Service) error {
 	// get docker auth
 	encodedAuth, err := c.client.RetrieveAuthTokenFromImage(image)
 	if err != nil {
-		return fmt.Errorf("cannot retrieve auth token from service's image %s", service.Spec.Name)
+		return errors.Wrap(err, "cannot retrieve auth token from service's image")
 	}
 
 	// do not set auth if is an empty json object
@@ -101,7 +103,7 @@ func (c *Swarm) updateService(service swarm.Service) error {
 	// fetch a newer image digest
 	service.Spec.TaskTemplate.ContainerSpec.Image, err = c.getImageDigest(imageName, updateOpts.EncodedRegistryAuth)
 	if err != nil {
-		return fmt.Errorf("failed to get new image digest: %s", err.Error())
+		return errors.Wrap(err, "failed to get new image digest")
 	}
 
 	if image == service.Spec.TaskTemplate.ContainerSpec.Image {
@@ -109,9 +111,10 @@ func (c *Swarm) updateService(service swarm.Service) error {
 		return nil
 	}
 
+	log.Debug("Updating service %s...", service.Spec.Name)
 	response, err := c.client.ServiceUpdate(service.ID, service.Version, service.Spec, updateOpts)
 	if err != nil {
-		return fmt.Errorf("cannot update service %s: %s", service.Spec.Name, err.Error())
+		return errors.Wrapf(err, "failed to update service %s", service.Spec.Name)
 	}
 
 	for _, warning := range response.Warnings {
@@ -120,7 +123,7 @@ func (c *Swarm) updateService(service swarm.Service) error {
 
 	updatedService, _, err := c.client.ServiceInspectWithRaw(service.ID, types.ServiceInspectOptions{})
 	if err != nil {
-		return fmt.Errorf("cannot inspect service %s to check update status: %s", service.Spec.Name, err.Error())
+		return errors.Wrapf(err, "cannot inspect service %s to check update status", service.Spec.Name)
 	}
 
 	previous := updatedService.PreviousSpec.TaskTemplate.ContainerSpec.Image
@@ -139,7 +142,7 @@ func (c *Swarm) updateService(service swarm.Service) error {
 func (c *Swarm) UpdateServices() error {
 	services, err := c.serviceList()
 	if err != nil {
-		return fmt.Errorf("failed to get service list: %s", err.Error())
+		return errors.Wrap(err, "failed to get service list")
 	}
 
 	var serviceID string
@@ -167,12 +170,12 @@ func (c *Swarm) UpdateServices() error {
 		// refresh service
 		service, _, err := c.client.ServiceInspectWithRaw(serviceID, types.ServiceInspectOptions{})
 		if err != nil {
-			return fmt.Errorf("cannot inspect this service: %s", err.Error())
+			return errors.Wrapf(err, "cannot inspect the service %s", serviceID)
 		}
 
 		err = c.updateService(service)
 		if err != nil {
-			return fmt.Errorf("failed to update this service: %s", err.Error())
+			return errors.Wrapf(err, "failed to update the service %s", serviceID)
 		}
 	}
 
@@ -182,22 +185,22 @@ func (c *Swarm) UpdateServices() error {
 func (c *Swarm) getImageDigest(image, encodedAuth string) (string, error) {
 	namedRef, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse image name: %s", err.Error())
+		return "", errors.Wrap(err, "failed to parse image name")
 	}
 
 	if _, isCanonical := namedRef.(reference.Canonical); isCanonical {
-		return "", fmt.Errorf("the image name already have a digest")
+		return "", errors.New("the image name already have a digest")
 	}
 
 	distributionInspect, err := c.client.DistributionInspect(image, encodedAuth)
 	if err != nil {
-		return "", fmt.Errorf("failed to inspect image: %s", err.Error())
+		return "", errors.Wrap(err, "failed to inspect image")
 	}
 
 	// ensure that image gets a default tag if none is provided
 	img, err := reference.WithDigest(namedRef, distributionInspect.Descriptor.Digest)
 	if err != nil {
-		return "", fmt.Errorf("the image name has an invalid format: %s", err.Error())
+		return "", errors.Wrap(err, "the image name has an invalid format")
 	}
 
 	return reference.FamiliarString(img), nil
