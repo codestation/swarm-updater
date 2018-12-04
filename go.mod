@@ -35,6 +35,7 @@ require (
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2 // indirect
 	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
+	github.com/hashicorp/go-version v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jinzhu/gorm v1.9.1 // indirect
 	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a // indirect
@@ -79,8 +80,8 @@ require (
 	gotest.tools v2.1.0+incompatible // indirect
 )
 
-// github.com/docker/engine v18.06.1-ce
-replace github.com/docker/docker => github.com/docker/engine v0.0.0-20180816081446-320063a2ad06
+// github.com/docker/engine v18.09.0
+replace github.com/docker/docker => github.com/docker/engine v0.0.0-20181106193140-f5749085e9cb
 
-// github.com/docker/cli v18.06.1-ce
-replace github.com/docker/cli => github.com/docker/cli v0.0.0-20180814145437-67f9a3912cf9
+// github.com/docker/cli v18.09.0
+replace github.com/docker/cli => github.com/docker/cli v0.0.0-20181026145426-51668a30f262

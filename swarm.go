@@ -65,7 +65,7 @@ func NewSwarm() (*Swarm, error) {
 		return nil, errors.Wrap(err, "failed to initialize docker client")
 	}
 
-	dockerCli := command.NewDockerCli(os.Stdin, os.Stdout, os.Stderr, false)
+	dockerCli := command.NewDockerCli(os.Stdin, os.Stdout, os.Stderr, false, nil)
 	if err = dockerCli.Initialize(flags.NewClientOptions()); err != nil {
 		return nil, errors.Wrap(err, "failed to initialize docker cli")
 	}
