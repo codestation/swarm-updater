@@ -5,14 +5,13 @@ steps:
 - name: test
   image: golang:1.11
   commands:
-  - go install golang.org/x/lint/golint
-  - go vet ./...
-  - go test -v ./...
+  - go install -mod vendor golang.org/x/lint/golint
+  - go vet -mod vendor ./...
+  - go test -mod vendor -v ./...
   - golint -set_exit_status `find . -type d -not -path "./vendor*" -not -path "./.git*"`
   settings:
     environment:
     - GO111MODULE=on
-    - GOFLAGS=-mod=vendor
 
 - name: build
   image: plugins/docker
