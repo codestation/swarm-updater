@@ -50,7 +50,7 @@ func runCron(schedule string, useLabels bool) error {
 					log.Printf("Cannot update services: %s", err.Error())
 				}
 			default:
-				log.Printf("Skipped service update. Already running")
+				log.Debug("Skipped service update. Already running")
 			}
 
 			nextRuns := cronService.Entries()

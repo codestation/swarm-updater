@@ -10,7 +10,7 @@ WORKDIR /app
 COPY . .
 
 RUN go install -mod vendor -ldflags "-w -s \
-   -X main.AppVersion=0.1.${BUILD_NUMBER} \
+   -X main.BuildNumber=${BUILD_NUMBER} \
    -X main.BuildCommit=${BUILD_COMMIT_SHORT} \
    -X main.ImageName=${IMAGE_NAME} \
   -X \"main.BuildTime=$(date -u '+%Y-%m-%d %I:%M:%S %Z')\"" \

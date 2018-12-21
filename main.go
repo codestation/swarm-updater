@@ -36,7 +36,9 @@ var (
 	// BuildCommit indicates the git commit of the build
 	BuildCommit string
 	// AppVersion indicates the application version
-	AppVersion = "0.1.0"
+	AppVersion = "0.1"
+	// BuildNumber indicates the compilation number
+	BuildNumber = "0"
 	// ImageName indicates this image name
 	ImageName string
 )
@@ -62,10 +64,13 @@ func initialize(c *cli.Context) error {
 		log.Fatal("Do not define a blacklist if label-enable is enabled")
 	}
 
-	log.Printf("Starting swarm-updater %s", AppVersion)
+	log.Printf("Starting swarm-updater %s.%s", AppVersion, BuildNumber)
 
 	if len(BuildTime) > 0 {
 		log.Printf("Build Time: %s", BuildTime)
+	}
+
+	if len(BuildCommit) > 0 {
 		log.Printf("Build Commit: %s", BuildCommit)
 	}
 
@@ -96,7 +101,7 @@ func initialize(c *cli.Context) error {
 func main() {
 	app := cli.NewApp()
 	app.Usage = "automatically update Docker services"
-	app.Version = AppVersion
+	app.Version = AppVersion + "." + BuildNumber
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
