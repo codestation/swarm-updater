@@ -70,11 +70,11 @@ func TestValidServiceLabel(t *testing.T) {
 	ok := s.validService(service)
 	assert.False(ok)
 
-	service.Spec.Labels = map[string]string{serviceLabel: "false"}
+	service.Spec.Labels = map[string]string{enabledServiceLabel: "false"}
 	ok = s.validService(service)
 	assert.False(ok)
 
-	service.Spec.Labels = map[string]string{serviceLabel: "true"}
+	service.Spec.Labels = map[string]string{enabledServiceLabel: "true"}
 	ok = s.validService(service)
 	assert.True(ok)
 }

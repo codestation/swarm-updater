@@ -32,7 +32,8 @@ import (
 	"megpoid.xyz/go/swarm-updater/log"
 )
 
-const serviceLabel string = "xyz.megpoid.swarm-updater.enable"
+const serviceLabel string = "xyz.megpoid.swarm-updater"
+const enabledServiceLabel string = "xyz.megpoid.swarm-updater.enable"
 
 // Swarm struct to handle all the service operations
 type Swarm struct {
@@ -43,7 +44,7 @@ type Swarm struct {
 
 func (c *Swarm) validService(service swarm.Service) bool {
 	if c.LabelEnable {
-		label := service.Spec.Labels[serviceLabel]
+		label := service.Spec.Labels[enabledServiceLabel]
 		return strings.ToLower(label) == "true"
 	}
 
@@ -149,11 +150,9 @@ func (c *Swarm) UpdateServices() error {
 
 	for _, service := range services {
 		if c.validService(service) {
-			// try to identify this service, naive approach
-			namedRef, _ := reference.ParseNormalizedNamed(service.Spec.TaskTemplate.ContainerSpec.Image)
-			currentImageName := reference.Path(namedRef)
 
-			if currentImageName == ImageName {
+			// try to identify this service
+			if _, ok := service.Spec.TaskTemplate.ContainerSpec.Labels[serviceLabel]; ok {
 				serviceID = service.ID
 				continue
 			}

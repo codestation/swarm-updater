@@ -2,7 +2,6 @@ FROM golang:1.11-alpine as builder
 
 ARG BUILD_NUMBER=0
 ARG BUILD_COMMIT_SHORT=unknown
-ARG IMAGE_NAME=codestation/swarm-updater
 ENV GO111MODULE=on
 ENV CGO_ENABLED=0
 
@@ -12,7 +11,6 @@ COPY . .
 RUN go install -mod vendor -ldflags "-w -s \
    -X main.BuildNumber=${BUILD_NUMBER} \
    -X main.BuildCommit=${BUILD_COMMIT_SHORT} \
-   -X main.ImageName=${IMAGE_NAME} \
   -X \"main.BuildTime=$(date -u '+%Y-%m-%d %I:%M:%S %Z')\"" \
   -a .
 

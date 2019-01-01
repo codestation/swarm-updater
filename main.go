@@ -39,8 +39,6 @@ var (
 	AppVersion = "0.1"
 	// BuildNumber indicates the compilation number
 	BuildNumber = "0"
-	// ImageName indicates this image name
-	ImageName string
 )
 
 func run(c *cli.Context) error {
@@ -130,7 +128,7 @@ func main() {
 		},
 		cli.BoolFlag{
 			Name:   "label-enable, l",
-			Usage:  fmt.Sprintf("watch services where %s label is set to true", serviceLabel),
+			Usage:  fmt.Sprintf("watch services where %s label is set to true", enabledServiceLabel),
 			EnvVar: "LABEL_ENABLE",
 		},
 		cli.StringSliceFlag{
