@@ -1473,11 +1473,9 @@ definitions:
             type: "string"
       Options:
         description: "Driver-specific options, specified as a map."
-        type: "array"
-        items:
-          type: "object"
-          additionalProperties:
-            type: "string"
+        type: "object"
+        additionalProperties:
+          type: "string"
 
   NetworkContainer:
     type: "object"
@@ -2459,6 +2457,22 @@ definitions:
         description: "Whether there is currently a root CA rotation in progress for the swarm"
         type: "boolean"
         example: false
+      DefaultAddrPool:
+        description: |
+          Default Address Pool specifies default subnet pools for global scope networks.
+        type: "array"
+        items:
+          type: "string"
+          format: "CIDR"
+          example: ["10.10.0.0/16", "20.20.0.0/16"]
+      SubnetSize:
+        description: |
+          SubnetSize specifies the subnet size of the networks created from the default subnet pool
+        type: "integer"
+        format: "uint32"
+        maximum: 29
+        default: 24
+        example: 24
 
   JoinTokens:
     description: |
@@ -6402,7 +6416,7 @@ paths:
           type: "string"
           description: |
             A JSON encoded value of the filters (a `map[string][]string`) to process on the list of build cache objects. Available filters:
-            - `unused-for=<duration>`: duration relative to daemon's time, during which build cache was not used, in Go's duration format (e.g., '24h')
+            - `until=<duration>`: duration relative to daemon's time, during which build cache was not used, in Go's duration format (e.g., '24h')
             - `id=<id>`
             - `parent=<id>`
             - `type=<string>`

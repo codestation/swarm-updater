@@ -25,6 +25,6 @@ Every command-line option has their corresponding environment variable to config
 
 A file must be placed on `~/.docker/config.json` with the registry credentials (can be overriden with `--config` or `DOCKER_CONFIG`). The file can be created by using `docker login <registry>` and saving the credentials.
 
-## Prevent swarm-updster to update itself before checking all the other services
+## Delay swarm-updater to be the last updated service
 
 You must add the `xyz.megpoid.swarm-updater=true` label to your service so the updater can delay the update of itself as the last one.
