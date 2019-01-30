@@ -10,11 +10,11 @@ github.com/agl/ed25519
 github.com/agl/ed25519/edwards25519
 # github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973
 github.com/beorn7/perks/quantile
-# github.com/containerd/continuity v0.0.0-20181027224239-bea7585dbfac
+# github.com/containerd/continuity v0.0.0-20181203112020-004b46473808
 github.com/containerd/continuity/pathdriver
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/docker/cli v0.0.0-20181026144139-6b71e84ec8bf => github.com/docker/cli v0.0.0-20181219132003-336b2a5cac7f
+# github.com/docker/cli v0.0.0-20190129171106-b258f458cc8d => github.com/docker/cli v0.0.0-20181219132003-336b2a5cac7f
 github.com/docker/cli/cli/command
 github.com/docker/cli/cli/flags
 github.com/docker/cli/cli
@@ -30,7 +30,7 @@ github.com/docker/cli/types
 github.com/docker/cli/cli/config/credentials
 github.com/docker/cli/cli/connhelper/ssh
 github.com/docker/cli/cli/manifest/types
-# github.com/docker/distribution v2.7.0-rc.0+incompatible
+# github.com/docker/distribution v2.7.1+incompatible
 github.com/docker/distribution/reference
 github.com/docker/distribution/digestset
 github.com/docker/distribution/manifest/manifestlist
@@ -88,19 +88,17 @@ github.com/docker/go/canonical/json
 github.com/docker/go-connections/tlsconfig
 github.com/docker/go-connections/nat
 github.com/docker/go-connections/sockets
-# github.com/docker/go-metrics v0.0.0-20180209012529-399ea8c73916
+# github.com/docker/go-metrics v0.0.0-20181218153428-b84716841b82
 github.com/docker/go-metrics
 # github.com/docker/go-units v0.3.3
 github.com/docker/go-units
-# github.com/gogo/protobuf v1.1.1
+# github.com/gogo/protobuf v1.2.0
 github.com/gogo/protobuf/proto
 # github.com/golang/protobuf v1.2.0
 github.com/golang/protobuf/proto
-# github.com/gorilla/context v1.1.1
-github.com/gorilla/context
-# github.com/gorilla/mux v1.6.2
+# github.com/gorilla/mux v1.7.0
 github.com/gorilla/mux
-# github.com/hashicorp/go-version v1.0.0
+# github.com/hashicorp/go-version v1.1.0
 github.com/hashicorp/go-version
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
@@ -108,7 +106,7 @@ github.com/inconshreveable/mousetrap
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
-# github.com/miekg/pkcs11 v0.0.0-20181023194645-95e2e42e3ece
+# github.com/miekg/pkcs11 v0.0.0-20181204074848-79c216b7cb4d
 github.com/miekg/pkcs11
 # github.com/opencontainers/go-digest v1.0.0-rc1
 github.com/opencontainers/go-digest
@@ -117,34 +115,34 @@ github.com/opencontainers/image-spec/specs-go/v1
 github.com/opencontainers/image-spec/specs-go
 # github.com/opencontainers/runc v0.1.1
 github.com/opencontainers/runc/libcontainer/user
-# github.com/pkg/errors v0.8.0
+# github.com/pkg/errors v0.8.1
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/prometheus/client_golang v0.9.0
+# github.com/prometheus/client_golang v0.9.2
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/promhttp
 github.com/prometheus/client_golang/prometheus/internal
-# github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910
+# github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90
 github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.0.0-20181020173914-7e9e6cabbd39
+# github.com/prometheus/common v0.2.0
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/model
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
-# github.com/prometheus/procfs v0.0.0-20181005140218-185b4288413d
+# github.com/prometheus/procfs v0.0.0-20190129233650-316cf8ccfec5
 github.com/prometheus/procfs
 github.com/prometheus/procfs/nfs
 github.com/prometheus/procfs/xfs
 github.com/prometheus/procfs/internal/util
 # github.com/robfig/cron v0.0.0-20180505203441-b41be1df6967
 github.com/robfig/cron
-# github.com/sirupsen/logrus v1.2.0
+# github.com/sirupsen/logrus v1.3.0
 github.com/sirupsen/logrus
 # github.com/spf13/cobra v0.0.3
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.3
 github.com/spf13/pflag
-# github.com/stretchr/testify v1.2.2
+# github.com/stretchr/testify v1.3.0
 github.com/stretchr/testify/assert
 # github.com/theupdateframework/notary v0.6.1
 github.com/theupdateframework/notary
@@ -163,21 +161,20 @@ github.com/theupdateframework/notary/tuf/utils
 github.com/theupdateframework/notary/tuf/validation
 # github.com/urfave/cli v1.20.0
 github.com/urfave/cli
-# golang.org/x/crypto v0.0.0-20181030102418-4d3f4d9ffa16
+# golang.org/x/crypto v0.0.0-20190130090550-b01c7a725664
 golang.org/x/crypto/ssh/terminal
 golang.org/x/crypto/pbkdf2
-# golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3
+# golang.org/x/lint v0.0.0-20181217174547-8f45f776aaf1
 golang.org/x/lint/golint
 golang.org/x/lint
-# golang.org/x/net v0.0.0-20181029044818-c44066c5c816
+# golang.org/x/net v0.0.0-20190125091013-d26f9f9a57f3
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/proxy
-golang.org/x/net/context
 golang.org/x/net/internal/socks
-# golang.org/x/sys v0.0.0-20181031143558-9b800f95dbbc
+# golang.org/x/sys v0.0.0-20190130150945-aca44879d564
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/tools v0.0.0-20181101071927-45ff765b4815
+# golang.org/x/tools v0.0.0-20190130015043-a06a922acc1b
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
 golang.org/x/tools/go/internal/gcimporter
