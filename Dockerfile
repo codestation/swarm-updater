@@ -14,11 +14,11 @@ RUN go install -mod vendor -ldflags "-w -s \
   -X \"main.BuildTime=$(date -u '+%Y-%m-%d %I:%M:%S %Z')\"" \
   -a .
 
-FROM alpine:3.8
+FROM alpine:3.9
 LABEL maintainer="codestation <codestation404@gmail.com>"
 LABEL xyz.megpoid.swarm-updater="true"
 
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates tzdata
 
 COPY --from=builder /go/bin/swarm-updater /bin/swarm-updater
 
