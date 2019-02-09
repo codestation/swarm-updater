@@ -2,44 +2,54 @@ kind: pipeline
 name: default
 
 steps:
-- name: test
-  image: golang:1.11
-  commands:
-  - go install -mod vendor golang.org/x/lint/golint
-  - go vet -mod vendor ./...
-  - go test -mod vendor -v ./...
-  - golint -set_exit_status `find . -type d -not -path "./vendor*" -not -path "./.git*"`
-  settings:
-    environment:
-    - GO111MODULE=on
+  - name: test
+    image: golang:1.11
+    commands:
+      - go install -mod=vendor golang.org/x/lint/golint
+      - go vet -mod=vendor ./...
+      - go test -mod=vendor -v ./...
+      - golint -set_exit_status `find . -type d -not -path "./vendor*" -not -path "./.git*"`
+    settings:
+      environment:
+        - GO111MODULE=on
 
-- name: build
-  image: plugins/docker
-  settings:
-    repo: registry.megpoid.xyz/swarm-updater
-    tags: latest
-    registry: registry.megpoid.xyz
-    mirror: http://mirror:5000
-    build_args:
-      - BUILD_NUMBER=${DRONE_BUILD_NUMBER}
-      - BUILD_COMMIT_SHORT=${DRONE_COMMIT_SHA:0:8}
-    username: admin
-    password:
-      from_secret: docker_password
+  - name: build
+    image: plugins/docker
+    volumes:
+      - name: cache
+        path: /var/lib/docker
+    settings:
+      repo: registry.megpoid.xyz/swarm-updater
+      tags: latest
+      registry: registry.megpoid.xyz
+      mirror: http://mirror:5000
+      build_args:
+        - BUILD_NUMBER=${DRONE_BUILD_NUMBER}
+        - BUILD_COMMIT_SHORT=${DRONE_COMMIT_SHA:0:8}
+      username: admin
+      password:
+        from_secret: docker_password
 
-- name: dockerhub
-  image: plugins/docker
-  settings:
-    repo: codestation/swarm-updater
-    tags: latest
-    mirror: http://mirror:5000
-    build_args:
-      - BUILD_NUMBER=${DRONE_BUILD_NUMBER}
-      - BUILD_COMMIT_SHORT=${DRONE_COMMIT_SHA:0:8}
-    username: codestation
-    password:
-      from_secret: dockerhub_password
+  - name: dockerhub
+    image: plugins/docker
+    volumes:
+      - name: cache
+        path: /var/lib/docker
+    settings:
+      repo: codestation/swarm-updater
+      tags: latest
+      mirror: http://mirror:5000
+      build_args:
+        - BUILD_NUMBER=${DRONE_BUILD_NUMBER}
+        - BUILD_COMMIT_SHORT=${DRONE_COMMIT_SHA:0:8}
+      username: codestation
+      password:
+        from_secret: dockerhub_password
+
+volumes:
+  - name: cache
+    temp: {}
 
 trigger:
   branch:
-  - master
+    - master
