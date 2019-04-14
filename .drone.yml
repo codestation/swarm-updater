@@ -1,18 +1,10 @@
+---
 kind: pipeline
 name: default
 
-x-build: &docker_build
-  image: plugins/docker
-  volumes:
-    - name: cache
-      path: /var/lib/docker
-  settings: &settings
-    repo: registry.megpoid.xyz/swarm-updater
-    tags: latest
-    mirror: http://mirror:5000
-    build_args:
-      - BUILD_NUMBER=${DRONE_BUILD_NUMBER}
-      - BUILD_COMMIT_SHORT=${DRONE_COMMIT_SHA:0:8}
+platform:
+  os: linux
+  arch: amd64
 
 steps:
   - name: test
@@ -26,36 +18,22 @@ steps:
       environment:
         - GO111MODULE=on
 
-  - name: prebuild
-    <<: *docker_build
-    settings:
-      <<: *settings
-      registry: registry.megpoid.xyz
-      tags: builder
-      target: builder
-      dry_run: true
-
   - name: build
-    <<: *docker_build
+    image: plugins/docker
     settings:
-      <<: *settings
+      repo: registry.megpoid.xyz/swarm-updater
+      tags: latest
       registry: registry.megpoid.xyz
-      username: admin
+      mirror: http://mirror:5000
+      build_args:
+        - CI_TAG=${DRONE_TAG}
+        - BUILD_NUMBER=${DRONE_BUILD_NUMBER}
+        - BUILD_COMMIT_SHORT=${DRONE_COMMIT_SHA:0:8}
+        - CI_BUILD_CREATED=${DRONE_BUILD_CREATED}
+      username:
+        from_secret: docker_username
       password:
         from_secret: docker_password
-
-  - name: dockerhub
-    <<: *docker_build
-    settings:
-      <<: *settings
-      repo: codestation/swarm-updater
-      username: codestation
-      password:
-        from_secret: dockerhub_password
-
-volumes:
-  - name: cache
-    temp: {}
 
 trigger:
   branch:

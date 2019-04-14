@@ -30,16 +30,12 @@ import (
 
 var blacklist []*regexp.Regexp
 
-var (
-	// BuildTime indicates the date when the binary was built (set by -ldflags)
-	BuildTime string
-	// BuildCommit indicates the git commit of the build
-	BuildCommit string
-	// AppVersion indicates the application version
-	AppVersion = "0.1"
-	// BuildNumber indicates the compilation number
-	BuildNumber = "0"
-)
+const versionFormatter = `Swarm Updater
+Version:      %s
+Git commit:   %s
+Built:        %s
+Compilation:  %s
+`
 
 func run(c *cli.Context) error {
 	var schedule string
@@ -62,15 +58,11 @@ func initialize(c *cli.Context) error {
 		log.Fatal("Do not define a blacklist if label-enable is enabled")
 	}
 
-	log.Printf("Starting swarm-updater %s.%s", AppVersion, BuildNumber)
-
-	if len(BuildTime) > 0 {
-		log.Printf("Build Time: %s", BuildTime)
-	}
-
-	if len(BuildCommit) > 0 {
-		log.Printf("Build Commit: %s", BuildCommit)
-	}
+	log.Printf("Starting swarm-updater, version: %s, commit: %s, built: %s, compilation: %s",
+		Version,
+		Commit,
+		BuildTime,
+		BuildNumber)
 
 	err := envConfig(c)
 	if err != nil {
@@ -96,10 +88,15 @@ func initialize(c *cli.Context) error {
 	return nil
 }
 
+func printVersion(c *cli.Context) {
+	_, _ = fmt.Fprintf(c.App.Writer, versionFormatter, Version, Commit, BuildTime, BuildNumber)
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Usage = "automatically update Docker services"
-	app.Version = AppVersion + "." + BuildNumber
+	app.Version = Version
+	cli.VersionPrinter = printVersion
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
