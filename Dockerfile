@@ -1,4 +1,4 @@
-FROM golang:1.11-alpine as builder
+FROM golang:1.12-alpine as builder
 
 ARG BUILD_NUMBER
 ARG BUILD_COMMIT_SHORT

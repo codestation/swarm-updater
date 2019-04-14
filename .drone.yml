@@ -16,7 +16,7 @@ x-build: &docker_build
 
 steps:
   - name: test
-    image: golang:1.11
+    image: golang:1.12
     commands:
       - go install -mod=vendor golang.org/x/lint/golint
       - go vet -mod=vendor ./...
