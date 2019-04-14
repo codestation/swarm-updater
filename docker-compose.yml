@@ -1,0 +1,23 @@
+version: '3.5'
+services:
+  updater:
+    image: codestation/swarm-updater:latest
+    environment:
+      # the updater will ignore all the services starting with traefik_,
+      # those ending with _postgres and a consul service
+      BLACKLIST: ^traefik_, _postgres$$, consul_consul
+    secrets:
+      - source: config
+        target: /root/.docker/config.json
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      labels:
+        - xyz.megpoid.swarm-updater=true
+      placement:
+        constraints:
+          - node.role == manager
+          
+secrets:
+  config:
+    file: ./config.json
