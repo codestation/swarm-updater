@@ -152,7 +152,7 @@ func (c *Swarm) UpdateServices() error {
 		if c.validService(service) {
 
 			// try to identify this service
-			if _, ok := service.Spec.TaskTemplate.ContainerSpec.Labels[serviceLabel]; ok {
+			if _, ok := service.Spec.Annotations.Labels[serviceLabel]; ok {
 				serviceID = service.ID
 				continue
 			}
