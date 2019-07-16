@@ -70,8 +70,8 @@ require (
 	gotest.tools v2.2.0+incompatible // indirect
 )
 
-// github.com/docker/engine v18.09.2
-replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190206233949-eb137ff1765f
+// github.com/docker/engine v18.09.7
+replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190620014054-c513a4c6c298
 
-// github.com/docker/cli v18.09.2
-replace github.com/docker/cli => github.com/docker/cli v0.0.0-20190124132759-af2647d55b1d
+// github.com/docker/cli v18.09.7
+replace github.com/docker/cli => github.com/docker/cli v0.0.0-20190618164942-3a749342a396

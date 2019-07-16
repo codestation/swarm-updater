@@ -54,13 +54,14 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/denisenkom/go-mssqldb v0.0.0-20190204142019-df6d76eb9289 h1:U+DzmGUpc/dOjREgbyyChPhdDIFwPYnVk+/5YcAa194=
 github.com/denisenkom/go-mssqldb v0.0.0-20190204142019-df6d76eb9289/go.mod h1:xN/JuLBIz4bjkxNmByTiV1IbhfnYb6oo99phBn4Eqhc=
-github.com/docker/cli v0.0.0-20190124132759-af2647d55b1d/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
+github.com/docker/cli v0.0.0-20190618164942-3a749342a396 h1:SNsQFPcc3jeS46Lkp+bWLxarcUy7S9EgpHsSbwm/mqs=
+github.com/docker/cli v0.0.0-20190618164942-3a749342a396/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
 github.com/docker/distribution v2.7.1+incompatible h1:a5mlkVzth6W5A4fOsS3D2EO5BUmsJpcB+cRlLU7cSug=
 github.com/docker/distribution v2.7.1+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
-github.com/docker/docker v1.13.1/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/docker-credential-helpers v0.6.1 h1:Dq4iIfcM7cNtddhLVWe9h4QDjsi4OER3Z8voPu/I52g=
 github.com/docker/docker-credential-helpers v0.6.1/go.mod h1:WRaJzqw3CTB9bk10avuGsjVBZsD05qeibJ1/TYlvc0Y=
-github.com/docker/engine v0.0.0-20190206233949-eb137ff1765f/go.mod h1:3CPr2caMgTHxxIAZgEMd3uLYPDlRvPqCpyeRf6ncPcY=
+github.com/docker/engine v0.0.0-20190620014054-c513a4c6c298 h1:dDGt5n84DvY05kaJT26cw1TDxNW1NymRZ13j0KeEQaw=
+github.com/docker/engine v0.0.0-20190620014054-c513a4c6c298/go.mod h1:3CPr2caMgTHxxIAZgEMd3uLYPDlRvPqCpyeRf6ncPcY=
 github.com/docker/go v1.5.1-1 h1:hr4w35acWBPhGBXlzPoHpmZ/ygPjnmFVxGxxGnMyP7k=
 github.com/docker/go v1.5.1-1/go.mod h1:CADgU4DSXK5QUlFslkQu2yW2TKzFZcXq/leZfM0UH5Q=
 github.com/docker/go-connections v0.4.0 h1:El9xVISelRB7BuFusrZozjnkIM5YnzCViNKohAFqRJQ=
