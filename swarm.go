@@ -33,6 +33,7 @@ import (
 )
 
 const serviceLabel string = "xyz.megpoid.swarm-updater"
+const updateOnlyLabel string = "xyz.megpoid.swarm-updater.update-only"
 const enabledServiceLabel string = "xyz.megpoid.swarm-updater.enable"
 
 // Swarm struct to handle all the service operations
@@ -110,6 +111,12 @@ func (c *Swarm) updateService(service swarm.Service) error {
 	if image == service.Spec.TaskTemplate.ContainerSpec.Image {
 		log.Debug("Service %s is already up to date", service.Spec.Name)
 		return nil
+	}
+
+	if strings.ToLower(service.Spec.Labels[updateOnlyLabel]) == "true" {
+		if service.Spec.Mode.Replicated != nil && service.Spec.Mode.Replicated.Replicas != nil {
+			*service.Spec.Mode.Replicated.Replicas = 0
+		}
 	}
 
 	log.Debug("Updating service %s...", service.Spec.Name)

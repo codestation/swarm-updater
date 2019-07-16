@@ -28,3 +28,7 @@ A file must be placed on `~/.docker/config.json` with the registry credentials (
 ## Delay swarm-updater to be the last updated service
 
 You must add the `xyz.megpoid.swarm-updater=true` label to your service so the updater can delay the update of itself as the last one.
+
+## Only update the image but don't run the container
+
+You must add the `xyz.megpoid.swarm-updater.update-only=true` label to your service so only the image will be updated (useful for cron tasks where the container isn't running most of the time). Note: the service will be reconfigured with `replicas: 0` so this does nothing with global replication.
