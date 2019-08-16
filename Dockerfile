@@ -24,3 +24,5 @@ RUN apk add --no-cache ca-certificates tzdata
 COPY --from=builder /app/release/swarm-updater /bin/swarm-updater
 
 ENTRYPOINT ["/bin/swarm-updater"]
+
+CMD ["--cron"]

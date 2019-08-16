@@ -71,6 +71,10 @@ func initialize(c *cli.Context) error {
 		log.Debug("Compiled %d blacklist rules", len(list))
 	}
 
+	if c.IsSet("webhook") && c.String("webhook-token") == "" {
+		log.Fatal("Webhook token is not set")
+	}
+
 	return nil
 }
 
@@ -113,6 +117,27 @@ func main() {
 			Name:   "blacklist, b",
 			Usage:  "regular expression to match service names to ignore",
 			EnvVar: "BLACKLIST",
+		},
+		cli.BoolFlag{
+			Name:   "cron",
+			Usage:  "enable cron scheduling",
+			EnvVar: "CRON_ENABLE",
+		},
+		cli.BoolFlag{
+			Name:   "webhook",
+			Usage:  "listen for webhook events",
+			EnvVar: "WEBHOOK_ENABLE",
+		},
+		cli.BoolFlag{
+			Name:   "webhook-token",
+			Usage:  "webhook auth token",
+			EnvVar: "WEBHOOK_TOKEN",
+		},
+		cli.StringFlag{
+			Name:   "webhook-addr",
+			Usage:  "webhook listen addr",
+			Value:  ":8080",
+			EnvVar: "WEBHOOK_ADDR",
 		},
 		cli.BoolFlag{
 			Name:   "debug, d",
