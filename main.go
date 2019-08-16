@@ -20,11 +20,9 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/urfave/cli"
-
 	"megpoid.xyz/go/swarm-updater/log"
 )
 
@@ -38,22 +36,10 @@ Compilation:  %s
 `
 
 func run(c *cli.Context) error {
-	var schedule string
-
-	if c.IsSet("schedule") {
-		schedule = c.String("schedule")
-	} else {
-		schedule = "@every " + strconv.Itoa(c.Int("interval")) + "s"
-	}
-
-	return runCron(schedule, c.Bool("label-enable"))
+	return runCron(c.String("schedule"), c.Bool("label-enable"))
 }
 
 func initialize(c *cli.Context) error {
-	if c.IsSet("interval") && c.IsSet("schedule") {
-		log.Fatal("Only schedule or interval can be defined, not both")
-	}
-
 	if c.Bool("label-enable") && (c.IsSet("blacklist") || c.IsSet("blacklist-regex")) {
 		log.Fatal("Do not define a blacklist if label-enable is enabled")
 	}
@@ -112,15 +98,10 @@ func main() {
 			Name:  "config, c",
 			Usage: "location of the docker config files",
 		},
-		cli.IntFlag{
-			Name:   "interval, i",
-			Value:  300,
-			Usage:  "poll interval (in seconds)",
-			EnvVar: "INTERVAL",
-		},
 		cli.StringFlag{
 			Name:   "schedule, s",
 			Usage:  "cron schedule",
+			Value:  "@every 5m",
 			EnvVar: "SCHEDULE",
 		},
 		cli.BoolFlag{
