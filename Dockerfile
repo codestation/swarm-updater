@@ -16,7 +16,7 @@ RUN CGO_ENABLED=0 go build -o release/swarm-updater \
    -X main.Commit=${BUILD_COMMIT_SHORT} \
    -X main.BuildTime=${CI_BUILD_CREATED}"
 
-FROM alpine:3.9
+FROM alpine:3.10
 LABEL maintainer="codestation <codestation404@gmail.com>"
 
 RUN apk add --no-cache ca-certificates tzdata

@@ -22,7 +22,7 @@ import (
 	"syscall"
 
 	"github.com/pkg/errors"
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 	"megpoid.xyz/go/swarm-updater/log"
 )
 
@@ -38,8 +38,12 @@ func runCron(schedule string, useLabels bool) error {
 	tryLockSem := make(chan bool, 1)
 	tryLockSem <- true
 
-	cronService := cron.New()
-	err = cronService.AddFunc(
+	// retain non standard seconds support
+	cronService := cron.New(cron.WithParser(cron.NewParser(
+		cron.SecondOptional | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor,
+	)))
+
+	_, err = cronService.AddFunc(
 		schedule,
 		func() {
 			select {
@@ -67,11 +71,12 @@ func runCron(schedule string, useLabels bool) error {
 	cronService.Start()
 
 	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
-	signal.Notify(interrupt, syscall.SIGTERM)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
 	<-interrupt
-	cronService.Stop()
+	ctx := cronService.Stop()
+	<-ctx.Done()
+
 	log.Println("Waiting for running update to be finished...")
 	<-tryLockSem
 
