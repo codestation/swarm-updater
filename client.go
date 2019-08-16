@@ -21,7 +21,7 @@ type DockerClient interface {
 
 type dockerClient struct {
 	apiClient *client.Client
-	dockerCli *command.DockerCli
+	dockerCli command.Cli
 }
 
 func (c *dockerClient) DistributionInspect(image, encodedAuth string) (registry.DistributionInspect, error) {

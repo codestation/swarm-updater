@@ -23,7 +23,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/robfig/cron"
-
 	"megpoid.xyz/go/swarm-updater/log"
 )
 

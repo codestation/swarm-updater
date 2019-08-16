@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"os"
 	"regexp"
 	"strings"
 
@@ -28,7 +27,6 @@ import (
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
-
 	"megpoid.xyz/go/swarm-updater/log"
 )
 
@@ -67,7 +65,11 @@ func NewSwarm() (*Swarm, error) {
 		return nil, errors.Wrap(err, "failed to initialize docker client")
 	}
 
-	dockerCli := command.NewDockerCli(os.Stdin, os.Stdout, os.Stderr, false, nil)
+	dockerCli, err := command.NewDockerCli()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create docker cli")
+	}
+
 	if err = dockerCli.Initialize(flags.NewClientOptions()); err != nil {
 		return nil, errors.Wrap(err, "failed to initialize docker cli")
 	}
