@@ -35,11 +35,26 @@ const serviceLabel string = "xyz.megpoid.swarm-updater"
 const updateOnlyLabel string = "xyz.megpoid.swarm-updater.update-only"
 const enabledServiceLabel string = "xyz.megpoid.swarm-updater.enable"
 
+// Cli wrapper arounf docker cli to implement RetrieveAuthTokenFromImage
+type commandCli struct {
+	cli command.Cli
+}
+
+func (c *commandCli) RetrieveAuthTokenFromImage(ctx context.Context, image string) (string, error) {
+	return command.RetrieveAuthTokenFromImage(ctx, c.cli, image)
+}
+
+type Cli interface {
+	RetrieveAuthTokenFromImage(ctx context.Context, image string) (string, error)
+}
+
 // Swarm struct to handle all the service operations
 type Swarm struct {
-	client      DockerClient
-	Blacklist   []*regexp.Regexp
-	LabelEnable bool
+	cli                Cli
+	serviceClient      client.ServiceAPIClient
+	distributionClient client.DistributionAPIClient
+	Blacklist          []*regexp.Regexp
+	LabelEnable        bool
 }
 
 func (c *Swarm) validService(service swarm.Service) bool {
@@ -59,27 +74,27 @@ func (c *Swarm) validService(service swarm.Service) bool {
 	return true
 }
 
-// NewSwarm instantiates a new Docker swarm client
+// NewSwarm instantiates a new Docker swarm serviceClient
 func NewSwarm() (*Swarm, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	apiClient, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize docker client")
+		return nil, errors.Wrap(err, "failed to initialize docker serviceClient")
 	}
 
-	dockerCli, err := command.NewDockerCli()
+	cli, err := command.NewDockerCli()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create docker cli")
+		return nil, errors.Wrap(err, "failed to create docker apiClient")
 	}
 
-	if err = dockerCli.Initialize(flags.NewClientOptions()); err != nil {
-		return nil, errors.Wrap(err, "failed to initialize docker cli")
+	if err = cli.Initialize(flags.NewClientOptions()); err != nil {
+		return nil, errors.Wrap(err, "failed to initialize docker apiClient")
 	}
 
-	return &Swarm{client: &dockerClient{apiClient: cli, dockerCli: dockerCli}}, nil
+	return &Swarm{cli: &commandCli{cli}, serviceClient: apiClient, distributionClient: apiClient}, nil
 }
 
 func (c *Swarm) serviceList(ctx context.Context) ([]swarm.Service, error) {
-	services, err := c.client.ServiceList(ctx, types.ServiceListOptions{})
+	services, err := c.serviceClient.ServiceList(ctx, types.ServiceListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "ServiceList failed")
 	}
@@ -92,7 +107,7 @@ func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error 
 	updateOpts := types.ServiceUpdateOptions{}
 
 	// get docker auth
-	encodedAuth, err := c.client.RetrieveAuthTokenFromImage(ctx, image)
+	encodedAuth, err := c.cli.RetrieveAuthTokenFromImage(ctx, image)
 	if err != nil {
 		return errors.Wrap(err, "cannot retrieve auth token from service's image")
 	}
@@ -123,7 +138,7 @@ func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error 
 	}
 
 	log.Debug("Updating service %s...", service.Spec.Name)
-	response, err := c.client.ServiceUpdate(ctx, service.ID, service.Version, service.Spec, updateOpts)
+	response, err := c.serviceClient.ServiceUpdate(ctx, service.ID, service.Version, service.Spec, updateOpts)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update service %s", service.Spec.Name)
 	}
@@ -132,7 +147,7 @@ func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error 
 		log.Debug("response warning:\n%s", warning)
 	}
 
-	updatedService, _, err := c.client.ServiceInspectWithRaw(ctx, service.ID, types.ServiceInspectOptions{})
+	updatedService, _, err := c.serviceClient.ServiceInspectWithRaw(ctx, service.ID, types.ServiceInspectOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "cannot inspect service %s to check update status", service.Spec.Name)
 	}
@@ -181,7 +196,7 @@ func (c *Swarm) UpdateServices(ctx context.Context) error {
 
 	if serviceID != "" {
 		// refresh service
-		service, _, err := c.client.ServiceInspectWithRaw(ctx, serviceID, types.ServiceInspectOptions{})
+		service, _, err := c.serviceClient.ServiceInspectWithRaw(ctx, serviceID, types.ServiceInspectOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "cannot inspect the service %s", serviceID)
 		}
@@ -205,7 +220,7 @@ func (c *Swarm) getImageDigest(ctx context.Context, image, encodedAuth string) (
 		return "", errors.New("the image name already have a digest")
 	}
 
-	distributionInspect, err := c.client.DistributionInspect(ctx, image, encodedAuth)
+	distributionInspect, err := c.distributionClient.DistributionInspect(ctx, image, encodedAuth)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to inspect image")
 	}

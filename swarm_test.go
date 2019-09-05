@@ -2,65 +2,17 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 	"testing"
-
-	"megpoid.xyz/go/swarm-updater/log"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/api/types/swarm"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	test "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"megpoid.xyz/go/swarm-updater/log"
 )
-
-type dockerClientMock struct {
-	DistributionInspectFn        func(ctx context.Context, image, encodedAuth string) (registry.DistributionInspect, error)
-	RetrieveAuthTokenFromImageFn func(ctx context.Context, image string) (string, error)
-	ServiceUpdateFn              func(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error)
-	ServiceInspectWithRawFn      func(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error)
-	ServiceListFn                func(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error)
-}
-
-func (s *dockerClientMock) DistributionInspect(ctx context.Context, image, encodedAuth string) (registry.DistributionInspect, error) {
-	if s.DistributionInspectFn != nil {
-		return s.DistributionInspectFn(ctx, image, encodedAuth)
-	}
-
-	return registry.DistributionInspect{}, nil
-}
-
-func (s *dockerClientMock) RetrieveAuthTokenFromImage(ctx context.Context, image string) (string, error) {
-	if s.RetrieveAuthTokenFromImageFn != nil {
-		return s.RetrieveAuthTokenFromImageFn(ctx, image)
-	}
-
-	return "", nil
-}
-
-func (s *dockerClientMock) ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error) {
-	if s.ServiceUpdateFn != nil {
-		return s.ServiceUpdateFn(ctx, serviceID, version, service, options)
-	}
-
-	return types.ServiceUpdateResponse{}, nil
-}
-
-func (s *dockerClientMock) ServiceInspectWithRaw(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error) {
-	if s.ServiceInspectWithRawFn != nil {
-		return s.ServiceInspectWithRawFn(ctx, serviceID, opts)
-	}
-
-	return swarm.Service{}, nil, nil
-}
-
-func (s *dockerClientMock) ServiceList(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error) {
-	if s.ServiceListFn != nil {
-		return s.ServiceListFn(ctx, options)
-	}
-
-	return []swarm.Service{}, nil
-}
 
 func TestValidServiceLabel(t *testing.T) {
 	assert := test.New(t)
@@ -114,18 +66,26 @@ func TestValidServiceBlacklist(t *testing.T) {
 func TestUpdateServiceEmpty(t *testing.T) {
 	assert := test.New(t)
 
-	mock := dockerClientMock{}
-	mock.ServiceListFn = func(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error) {
-		return []swarm.Service{}, nil
-	}
+	serviceMock := &ServiceAPIClientMock{}
+	s := Swarm{serviceClient: serviceMock}
 
-	s := Swarm{client: &mock}
+	var serviceList []swarm.Service
+	serviceMock.On("ServiceList",
+		mock.Anything,
+		mock.Anything,
+	).Return(serviceList, nil)
+
 	err := s.UpdateServices(context.TODO())
 	assert.NoError(err)
+
+	serviceMock.AssertExpectations(t)
 }
 
 func TestUpdateServices(t *testing.T) {
 	assert := test.New(t)
+
+	const currentDigest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+	const updatedDigest = "sha256:0000000000000000000000000000000000000000000000000000000000000001"
 
 	services := []swarm.Service{
 		{
@@ -133,7 +93,7 @@ func TestUpdateServices(t *testing.T) {
 			Spec: swarm.ServiceSpec{
 				Annotations: swarm.Annotations{Name: "service_foo"},
 				TaskTemplate: swarm.TaskSpec{
-					ContainerSpec: &swarm.ContainerSpec{Image: "foo:latest@sha256:0000000000000000000000000000000000000000000000000000000000000000"},
+					ContainerSpec: &swarm.ContainerSpec{Image: "foo:latest@" + currentDigest},
 				},
 			},
 			PreviousSpec: &swarm.ServiceSpec{
@@ -145,7 +105,7 @@ func TestUpdateServices(t *testing.T) {
 			Spec: swarm.ServiceSpec{
 				Annotations: swarm.Annotations{Name: "service_bar"},
 				TaskTemplate: swarm.TaskSpec{
-					ContainerSpec: &swarm.ContainerSpec{Image: "bar:latest@sha256:0000000000000000000000000000000000000000000000000000000000000000"},
+					ContainerSpec: &swarm.ContainerSpec{Image: "bar:latest@" + currentDigest},
 				},
 			},
 			PreviousSpec: &swarm.ServiceSpec{
@@ -157,7 +117,7 @@ func TestUpdateServices(t *testing.T) {
 			Spec: swarm.ServiceSpec{
 				Annotations: swarm.Annotations{Name: "service_baz"},
 				TaskTemplate: swarm.TaskSpec{
-					ContainerSpec: &swarm.ContainerSpec{Image: "baz:latest@sha256:0000000000000000000000000000000000000000000000000000000000000000"},
+					ContainerSpec: &swarm.ContainerSpec{Image: "baz:latest@" + currentDigest},
 				},
 			},
 			PreviousSpec: &swarm.ServiceSpec{
@@ -166,46 +126,53 @@ func TestUpdateServices(t *testing.T) {
 		},
 	}
 
-	mock := dockerClientMock{}
+	cliMock := &CliMock{}
+	serviceMock := &ServiceAPIClientMock{}
+	distributionMock := &DistributionAPIClientMock{}
 
-	mock.ServiceListFn = func(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error) {
-		return services, nil
-	}
+	s := Swarm{serviceClient: serviceMock, distributionClient: distributionMock, cli: cliMock}
+	s.cli = cliMock
 
-	mock.ServiceInspectWithRawFn = func(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error) {
-		for _, service := range services {
-			if service.ID == serviceID {
-				return service, nil, nil
-			}
-		}
+	ctx := context.TODO()
+	tokenAuth := "token_auth"
 
-		assert.Fail("Should be on the service list", "%s isn't on service list", serviceID)
-		return swarm.Service{}, nil, fmt.Errorf("service not found: %s", serviceID)
-	}
+	serviceMock.On("ServiceList",
+		ctx, mock.AnythingOfType("ServiceListOptions"),
+	).Return(services, nil)
 
-	mock.ServiceUpdateFn = func(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error) {
-		for _, serv := range services {
-			if serv.ID == serviceID {
-				image := service.TaskTemplate.ContainerSpec.Image
-				regex := regexp.MustCompile(".*@sha256:.*")
-				matched := regex.MatchString(image)
-				assert.False(matched, "%s doesn't has the hash stripped", image)
+	cliMock.On("RetrieveAuthTokenFromImage",
+		ctx,
+		mock.AnythingOfType("string"),
+	).Return(tokenAuth, nil)
 
-				serv.PreviousSpec.TaskTemplate.ContainerSpec.Image = image
-				serv.Spec.TaskTemplate.ContainerSpec.Image = image + "@sha256:1111111111111111111111111111111111111111111111111111111111111111"
-
-				return types.ServiceUpdateResponse{}, nil
-			}
-		}
-
-		assert.Fail("Should be on the service list", "%s isn't on service list", serviceID)
-		return types.ServiceUpdateResponse{}, fmt.Errorf("service not found: %s", serviceID)
-	}
+	distributionMock.On("DistributionInspect",
+		ctx,
+		mock.AnythingOfType("string"),
+		tokenAuth,
+	).Return(registry.DistributionInspect{
+		Descriptor: v1.Descriptor{
+			Digest: updatedDigest,
+		},
+	}, nil)
+	serviceMock.On("ServiceInspectWithRaw",
+		ctx,
+		mock.AnythingOfType("string"),
+		mock.AnythingOfType("ServiceInspectOptions"),
+	).Return(services[0], []byte{}, nil)
+	serviceMock.On("ServiceUpdate",
+		ctx,
+		mock.AnythingOfType("string"),
+		mock.AnythingOfType("Version"),
+		mock.AnythingOfType("ServiceSpec"),
+		mock.AnythingOfType("ServiceUpdateOptions"),
+	).Return(types.ServiceUpdateResponse{}, nil)
 
 	// disable log
 	log.Printf = log.Debug
 
-	s := Swarm{client: &mock}
-	err := s.UpdateServices(context.TODO())
+	err := s.UpdateServices(ctx)
 	assert.NoError(err)
+
+	serviceMock.AssertExpectations(t)
+	cliMock.AssertExpectations(t)
 }

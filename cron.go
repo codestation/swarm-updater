@@ -30,7 +30,7 @@ import (
 func runCron(schedule string, useLabels bool) error {
 	swarm, err := NewSwarm()
 	if err != nil {
-		return errors.Wrap(err, "cannot instantiate new Docker swarm client")
+		return errors.Wrap(err, "cannot instantiate new Docker swarm serviceClient")
 	}
 
 	swarm.LabelEnable = useLabels

@@ -43,7 +43,7 @@ func setEnvOptBool(env string, opt bool) error {
 }
 
 // envConfig translates the command-line options into environment variables
-// that will initialize the api client
+// that will initialize the api serviceClient
 func envConfig(c *cli.Context) error {
 	var err error
 
