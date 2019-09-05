@@ -12,11 +12,11 @@ import (
 
 // DockerClient interacts with a Docker Swarm
 type DockerClient interface {
-	DistributionInspect(image, encodedAuth string) (registry.DistributionInspect, error)
-	RetrieveAuthTokenFromImage(image string) (string, error)
-	ServiceUpdate(serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error)
-	ServiceInspectWithRaw(serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error)
-	ServiceList(options types.ServiceListOptions) ([]swarm.Service, error)
+	DistributionInspect(ctx context.Context, image, encodedAuth string) (registry.DistributionInspect, error)
+	RetrieveAuthTokenFromImage(ctx context.Context, image string) (string, error)
+	ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error)
+	ServiceInspectWithRaw(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error)
+	ServiceList(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error)
 }
 
 type dockerClient struct {
@@ -24,22 +24,22 @@ type dockerClient struct {
 	dockerCli command.Cli
 }
 
-func (c *dockerClient) DistributionInspect(image, encodedAuth string) (registry.DistributionInspect, error) {
-	return c.apiClient.DistributionInspect(context.Background(), image, encodedAuth)
+func (c *dockerClient) DistributionInspect(ctx context.Context, image, encodedAuth string) (registry.DistributionInspect, error) {
+	return c.apiClient.DistributionInspect(ctx, image, encodedAuth)
 }
 
-func (c *dockerClient) RetrieveAuthTokenFromImage(image string) (string, error) {
-	return command.RetrieveAuthTokenFromImage(context.Background(), c.dockerCli, image)
+func (c *dockerClient) RetrieveAuthTokenFromImage(ctx context.Context, image string) (string, error) {
+	return command.RetrieveAuthTokenFromImage(ctx, c.dockerCli, image)
 }
 
-func (c *dockerClient) ServiceUpdate(serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error) {
-	return c.apiClient.ServiceUpdate(context.Background(), serviceID, version, service, options)
+func (c *dockerClient) ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error) {
+	return c.apiClient.ServiceUpdate(ctx, serviceID, version, service, options)
 }
 
-func (c *dockerClient) ServiceInspectWithRaw(serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error) {
-	return c.apiClient.ServiceInspectWithRaw(context.Background(), serviceID, opts)
+func (c *dockerClient) ServiceInspectWithRaw(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error) {
+	return c.apiClient.ServiceInspectWithRaw(ctx, serviceID, opts)
 }
 
-func (c *dockerClient) ServiceList(options types.ServiceListOptions) ([]swarm.Service, error) {
-	return c.apiClient.ServiceList(context.Background(), options)
+func (c *dockerClient) ServiceList(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error) {
+	return c.apiClient.ServiceList(ctx, options)
 }

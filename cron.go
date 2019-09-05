@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
@@ -35,6 +36,8 @@ func runCron(schedule string, useLabels bool) error {
 	swarm.LabelEnable = useLabels
 	swarm.Blacklist = blacklist
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	tryLockSem := make(chan bool, 1)
 	tryLockSem <- true
 
@@ -49,16 +52,11 @@ func runCron(schedule string, useLabels bool) error {
 			select {
 			case v := <-tryLockSem:
 				defer func() { tryLockSem <- v }()
-				if err := swarm.UpdateServices(); err != nil {
+				if err := swarm.UpdateServices(ctx); err != nil {
 					log.Printf("Cannot update services: %s", err.Error())
 				}
 			default:
 				log.Debug("Skipped service update. Already running")
-			}
-
-			nextRuns := cronService.Entries()
-			if len(nextRuns) > 0 {
-				log.Debug("Scheduled next run: " + nextRuns[0].Next.String())
 			}
 		})
 
@@ -72,10 +70,12 @@ func runCron(schedule string, useLabels bool) error {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-
 	<-interrupt
-	ctx := cronService.Stop()
-	<-ctx.Done()
+
+	cancel()
+
+	cronCtx := cronService.Stop()
+	<-cronCtx.Done()
 
 	log.Println("Waiting for running update to be finished...")
 	<-tryLockSem

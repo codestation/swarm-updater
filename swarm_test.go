@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"testing"
@@ -14,48 +15,48 @@ import (
 )
 
 type dockerClientMock struct {
-	DistributionInspectFn        func(image, encodedAuth string) (registry.DistributionInspect, error)
-	RetrieveAuthTokenFromImageFn func(image string) (string, error)
-	ServiceUpdateFn              func(serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error)
-	ServiceInspectWithRawFn      func(serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error)
-	ServiceListFn                func(options types.ServiceListOptions) ([]swarm.Service, error)
+	DistributionInspectFn        func(ctx context.Context, image, encodedAuth string) (registry.DistributionInspect, error)
+	RetrieveAuthTokenFromImageFn func(ctx context.Context, image string) (string, error)
+	ServiceUpdateFn              func(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error)
+	ServiceInspectWithRawFn      func(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error)
+	ServiceListFn                func(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error)
 }
 
-func (s *dockerClientMock) DistributionInspect(image, encodedAuth string) (registry.DistributionInspect, error) {
+func (s *dockerClientMock) DistributionInspect(ctx context.Context, image, encodedAuth string) (registry.DistributionInspect, error) {
 	if s.DistributionInspectFn != nil {
-		return s.DistributionInspectFn(image, encodedAuth)
+		return s.DistributionInspectFn(ctx, image, encodedAuth)
 	}
 
 	return registry.DistributionInspect{}, nil
 }
 
-func (s *dockerClientMock) RetrieveAuthTokenFromImage(image string) (string, error) {
+func (s *dockerClientMock) RetrieveAuthTokenFromImage(ctx context.Context, image string) (string, error) {
 	if s.RetrieveAuthTokenFromImageFn != nil {
-		return s.RetrieveAuthTokenFromImageFn(image)
+		return s.RetrieveAuthTokenFromImageFn(ctx, image)
 	}
 
 	return "", nil
 }
 
-func (s *dockerClientMock) ServiceUpdate(serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error) {
+func (s *dockerClientMock) ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error) {
 	if s.ServiceUpdateFn != nil {
-		return s.ServiceUpdateFn(serviceID, version, service, options)
+		return s.ServiceUpdateFn(ctx, serviceID, version, service, options)
 	}
 
 	return types.ServiceUpdateResponse{}, nil
 }
 
-func (s *dockerClientMock) ServiceInspectWithRaw(serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error) {
+func (s *dockerClientMock) ServiceInspectWithRaw(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error) {
 	if s.ServiceInspectWithRawFn != nil {
-		return s.ServiceInspectWithRawFn(serviceID, opts)
+		return s.ServiceInspectWithRawFn(ctx, serviceID, opts)
 	}
 
 	return swarm.Service{}, nil, nil
 }
 
-func (s *dockerClientMock) ServiceList(options types.ServiceListOptions) ([]swarm.Service, error) {
+func (s *dockerClientMock) ServiceList(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error) {
 	if s.ServiceListFn != nil {
-		return s.ServiceListFn(options)
+		return s.ServiceListFn(ctx, options)
 	}
 
 	return []swarm.Service{}, nil
@@ -114,12 +115,12 @@ func TestUpdateServiceEmpty(t *testing.T) {
 	assert := test.New(t)
 
 	mock := dockerClientMock{}
-	mock.ServiceListFn = func(options types.ServiceListOptions) ([]swarm.Service, error) {
+	mock.ServiceListFn = func(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error) {
 		return []swarm.Service{}, nil
 	}
 
 	s := Swarm{client: &mock}
-	err := s.UpdateServices()
+	err := s.UpdateServices(context.TODO())
 	assert.NoError(err)
 }
 
@@ -167,11 +168,11 @@ func TestUpdateServices(t *testing.T) {
 
 	mock := dockerClientMock{}
 
-	mock.ServiceListFn = func(options types.ServiceListOptions) ([]swarm.Service, error) {
+	mock.ServiceListFn = func(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error) {
 		return services, nil
 	}
 
-	mock.ServiceInspectWithRawFn = func(serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error) {
+	mock.ServiceInspectWithRawFn = func(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error) {
 		for _, service := range services {
 			if service.ID == serviceID {
 				return service, nil, nil
@@ -182,7 +183,7 @@ func TestUpdateServices(t *testing.T) {
 		return swarm.Service{}, nil, fmt.Errorf("service not found: %s", serviceID)
 	}
 
-	mock.ServiceUpdateFn = func(serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error) {
+	mock.ServiceUpdateFn = func(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error) {
 		for _, serv := range services {
 			if serv.ID == serviceID {
 				image := service.TaskTemplate.ContainerSpec.Image
@@ -205,6 +206,6 @@ func TestUpdateServices(t *testing.T) {
 	log.Printf = log.Debug
 
 	s := Swarm{client: &mock}
-	err := s.UpdateServices()
+	err := s.UpdateServices(context.TODO())
 	assert.NoError(err)
 }
