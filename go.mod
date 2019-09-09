@@ -51,7 +51,6 @@ require (
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/opencontainers/runc v0.1.1 // indirect
 	github.com/opencontainers/runtime-spec v1.0.1 // indirect
-	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
 	github.com/prometheus/procfs v0.0.4 // indirect
 	github.com/robfig/cron/v3 v3.0.0
