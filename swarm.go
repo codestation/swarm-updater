@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
@@ -172,41 +173,35 @@ func (c *Swarm) UpdateServices(ctx context.Context) error {
 		return fmt.Errorf("failed to get service list: %w", err)
 	}
 
-	var serviceID string
+	for idx, service := range services {
+		// move this service to the end of the list
+		if _, ok := service.Spec.Annotations.Labels[serviceLabel]; ok {
+			services = append(services[:idx], append(services[idx+1:], service)...)
+			break
+		}
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(len(services))
 
 	for _, service := range services {
-		if c.validService(service) {
-
-			// try to identify this service
-			if _, ok := service.Spec.Annotations.Labels[serviceLabel]; ok {
-				serviceID = service.ID
-				continue
-			}
-
-			if err = c.updateService(ctx, service); err != nil {
-				if ctx.Err() == context.Canceled {
-					log.Printf("Service update canceled")
-					break
+		go func(service swarm.Service) {
+			defer wg.Done()
+			if c.validService(service) {
+				if err = c.updateService(ctx, service); err != nil {
+					if ctx.Err() == context.Canceled {
+						log.Printf("Service update canceled: %s", service.Spec.Name)
+						return
+					}
+					log.Printf("Cannot update service %s: %s", service.Spec.Name, err.Error())
 				}
-				log.Printf("Cannot update service %s: %s", service.Spec.Name, err.Error())
+			} else {
+				log.Debug("Service %s was ignored by blacklist or missing label", service.Spec.Name)
 			}
-		} else {
-			log.Debug("Service %s was ignored by blacklist or missing label", service.Spec.Name)
-		}
+		}(service)
 	}
 
-	if serviceID != "" {
-		// refresh service
-		service, _, err := c.serviceClient.ServiceInspectWithRaw(ctx, serviceID, types.ServiceInspectOptions{})
-		if err != nil {
-			return fmt.Errorf("cannot inspect the service %s: %w", serviceID, err)
-		}
-
-		err = c.updateService(ctx, service)
-		if err != nil {
-			return fmt.Errorf("failed to update the service %s: %w", serviceID, err)
-		}
-	}
+	wg.Wait()
 
 	return nil
 }
