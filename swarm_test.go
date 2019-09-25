@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -10,7 +11,6 @@ import (
 	"github.com/docker/docker/api/types/swarm"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	test "github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"megpoid.xyz/go/swarm-updater/log"
 )
 
@@ -68,14 +68,11 @@ func TestUpdateServiceEmpty(t *testing.T) {
 
 	serviceMock := &ServiceAPIClientMock{}
 	s := Swarm{serviceClient: serviceMock}
+	ctx := context.TODO()
 
-	var serviceList []swarm.Service
-	serviceMock.On("ServiceList",
-		mock.Anything,
-		mock.Anything,
-	).Return(serviceList, nil)
+	serviceMock.On("ServiceList", ctx, types.ServiceListOptions{}).Return(make([]swarm.Service, 0), nil)
 
-	err := s.UpdateServices(context.TODO())
+	err := s.UpdateServices(ctx)
 	assert.NoError(err)
 
 	serviceMock.AssertExpectations(t)
@@ -136,36 +133,25 @@ func TestUpdateServices(t *testing.T) {
 	ctx := context.TODO()
 	tokenAuth := "token_auth"
 
-	serviceMock.On("ServiceList",
-		ctx, mock.AnythingOfType("ServiceListOptions"),
-	).Return(services, nil)
+	serviceMock.On("ServiceList", ctx, types.ServiceListOptions{}).Return(services, nil)
 
-	cliMock.On("RetrieveAuthTokenFromImage",
-		ctx,
-		mock.AnythingOfType("string"),
-	).Return(tokenAuth, nil)
+	for _, service := range services {
+		imageDigest := service.Spec.TaskTemplate.ContainerSpec.Image
+		cliMock.On("RetrieveAuthTokenFromImage", ctx, imageDigest).Return(tokenAuth, nil)
 
-	distributionMock.On("DistributionInspect",
-		ctx,
-		mock.AnythingOfType("string"),
-		tokenAuth,
-	).Return(registry.DistributionInspect{
-		Descriptor: v1.Descriptor{
-			Digest: updatedDigest,
-		},
-	}, nil)
-	serviceMock.On("ServiceInspectWithRaw",
-		ctx,
-		mock.AnythingOfType("string"),
-		mock.AnythingOfType("ServiceInspectOptions"),
-	).Return(services[0], []byte{}, nil)
-	serviceMock.On("ServiceUpdate",
-		ctx,
-		mock.AnythingOfType("string"),
-		mock.AnythingOfType("Version"),
-		mock.AnythingOfType("ServiceSpec"),
-		mock.AnythingOfType("ServiceUpdateOptions"),
-	).Return(types.ServiceUpdateResponse{}, nil)
+		imageName := strings.Split(imageDigest, "@")[0]
+		distributionMock.On("DistributionInspect",
+			ctx, imageName, tokenAuth,
+		).Return(registry.DistributionInspect{Descriptor: v1.Descriptor{Digest: updatedDigest}}, nil)
+
+		serviceMock.On("ServiceInspectWithRaw",
+			ctx, service.ID, types.ServiceInspectOptions{},
+		).Return(services[0], []byte{}, nil)
+
+		serviceMock.On("ServiceUpdate",
+			ctx, service.ID, service.Version, service.Spec, types.ServiceUpdateOptions{EncodedRegistryAuth: tokenAuth},
+		).Return(types.ServiceUpdateResponse{}, nil)
+	}
 
 	// disable log
 	log.Printf = log.Debug
