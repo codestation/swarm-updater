@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io/ioutil"
 	"regexp"
 	"strings"
 	"testing"
@@ -10,8 +11,8 @@ import (
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/api/types/swarm"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"github.com/sirupsen/logrus"
 	test "github.com/stretchr/testify/assert"
-	"megpoid.xyz/go/swarm-updater/log"
 )
 
 func TestValidServiceLabel(t *testing.T) {
@@ -154,7 +155,7 @@ func TestUpdateServices(t *testing.T) {
 	}
 
 	// disable log
-	log.Printf = log.Debug
+	logrus.SetOutput(ioutil.Discard)
 
 	err := s.UpdateServices(ctx)
 	assert.NoError(err)

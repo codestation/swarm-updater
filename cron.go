@@ -24,7 +24,7 @@ import (
 	"syscall"
 
 	"github.com/robfig/cron/v3"
-	"megpoid.xyz/go/swarm-updater/log"
+	"github.com/sirupsen/logrus"
 )
 
 func runCron(schedule string, useLabels bool) error {
@@ -53,10 +53,10 @@ func runCron(schedule string, useLabels bool) error {
 			case v := <-tryLockSem:
 				defer func() { tryLockSem <- v }()
 				if err := swarm.UpdateServices(ctx); err != nil {
-					log.Printf("Cannot update services: %s", err.Error())
+					logrus.Printf("Cannot update services: %s", err.Error())
 				}
 			default:
-				log.Debug("Skipped service update. Already running")
+				logrus.Debug("Skipped service update. Already running")
 			}
 		})
 
@@ -64,7 +64,7 @@ func runCron(schedule string, useLabels bool) error {
 		return fmt.Errorf("failed to setup cron: %w", err)
 	}
 
-	log.Debug("Configured cron schedule: %s", schedule)
+	logrus.Debugf("Configured cron schedule: %s", schedule)
 
 	cronService.Start()
 
@@ -77,7 +77,7 @@ func runCron(schedule string, useLabels bool) error {
 	cronCtx := cronService.Stop()
 	<-cronCtx.Done()
 
-	log.Println("Waiting for running update to be finished...")
+	logrus.Println("Waiting for running update to be finished...")
 	<-tryLockSem
 
 	return nil

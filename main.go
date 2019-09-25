@@ -21,8 +21,9 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/docker/docker/pkg/jsonmessage"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
-	"megpoid.xyz/go/swarm-updater/log"
 )
 
 var blacklist []*regexp.Regexp
@@ -39,22 +40,33 @@ func run(c *cli.Context) error {
 }
 
 func initialize(c *cli.Context) error {
-	if c.Bool("label-enable") && (c.IsSet("blacklist") || c.IsSet("blacklist-regex")) {
-		log.Fatal("Do not define a blacklist if label-enable is enabled")
+	if c.Bool("debug") {
+		logrus.SetLevel(logrus.DebugLevel)
+	} else {
+		logrus.SetLevel(logrus.InfoLevel)
 	}
 
-	log.Printf("Starting swarm-updater, version: %s, commit: %s, built: %s, compilation: %s",
-		Version,
-		Commit,
-		BuildTime,
-		BuildNumber)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		TimestampFormat: jsonmessage.RFC3339NanoFixed,
+		DisableColors:   c.Bool("raw-logs"),
+		FullTimestamp:   true,
+	})
+
+	if c.Bool("label-enable") && (c.IsSet("blacklist") || c.IsSet("blacklist-regex")) {
+		logrus.Fatal("Do not define a blacklist if label-enable is enabled")
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"version":     Version,
+		"commit":      Commit,
+		"built":       BuildTime,
+		"compilation": BuildNumber,
+	}).Info("swarm-updater")
 
 	err := envConfig(c)
 	if err != nil {
 		return fmt.Errorf("failed to sync environment: %w", err)
 	}
-
-	log.EnableDebug(c.Bool("debug"))
 
 	if c.IsSet("blacklist") {
 		list := c.StringSlice("blacklist")
@@ -67,7 +79,7 @@ func initialize(c *cli.Context) error {
 			blacklist = append(blacklist, regex)
 		}
 
-		log.Debug("Compiled %d blacklist rules", len(list))
+		logrus.Debugf("Compiled %d blacklist rules", len(list))
 	}
 
 	return nil
@@ -118,6 +130,11 @@ func main() {
 			Usage:  "enable debug logging",
 			EnvVar: "DEBUG",
 		},
+		cli.BoolFlag{
+			Name:   "raw-logs",
+			Usage:  "full timestamps without ANSI coloring",
+			EnvVar: "RAW_LOGS",
+		},
 	}
 
 	app.Before = initialize
@@ -125,6 +142,6 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatalf("Unrecoverable error: %s", err.Error())
+		logrus.Fatalf("Unrecoverable error: %s", err.Error())
 	}
 }

@@ -30,7 +30,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
-	"megpoid.xyz/go/swarm-updater/log"
+	"github.com/sirupsen/logrus"
 )
 
 const serviceLabel string = "xyz.megpoid.swarm-updater"
@@ -129,7 +129,7 @@ func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error 
 	}
 
 	if image == service.Spec.TaskTemplate.ContainerSpec.Image {
-		log.Debug("Service %s is already up to date", service.Spec.Name)
+		logrus.Debugf("Service %s is already up to date", service.Spec.Name)
 		return nil
 	}
 
@@ -139,14 +139,14 @@ func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error 
 		}
 	}
 
-	log.Debug("Updating service %s...", service.Spec.Name)
+	logrus.Debugf("Updating service %s...", service.Spec.Name)
 	response, err := c.serviceClient.ServiceUpdate(ctx, service.ID, service.Version, service.Spec, updateOpts)
 	if err != nil {
 		return fmt.Errorf("failed to update service %s: %w", service.Spec.Name, err)
 	}
 
 	for _, warning := range response.Warnings {
-		log.Debug("response warning:\n%s", warning)
+		logrus.Debugf("response warning:\n%s", warning)
 	}
 
 	updatedService, _, err := c.serviceClient.ServiceInspectWithRaw(ctx, service.ID, types.ServiceInspectOptions{})
@@ -158,9 +158,9 @@ func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error 
 	current := updatedService.Spec.TaskTemplate.ContainerSpec.Image
 
 	if previous != current {
-		log.Printf("Service %s updated to %s", service.Spec.Name, current)
+		logrus.Printf("Service %s updated to %s", service.Spec.Name, current)
 	} else {
-		log.Debug("Service %s is up to date", service.Spec.Name)
+		logrus.Debugf("Service %s is up to date", service.Spec.Name)
 	}
 
 	return nil
@@ -190,13 +190,13 @@ func (c *Swarm) UpdateServices(ctx context.Context) error {
 			if c.validService(service) {
 				if err = c.updateService(ctx, service); err != nil {
 					if ctx.Err() == context.Canceled {
-						log.Printf("Service update canceled: %s", service.Spec.Name)
+						logrus.Printf("Service update canceled: %s", service.Spec.Name)
 						return
 					}
-					log.Printf("Cannot update service %s: %s", service.Spec.Name, err.Error())
+					logrus.Printf("Cannot update service %s: %s", service.Spec.Name, err.Error())
 				}
 			} else {
-				log.Debug("Service %s was ignored by blacklist or missing label", service.Spec.Name)
+				logrus.Debugf("Service %s was ignored by blacklist or missing label", service.Spec.Name)
 			}
 		}(service)
 	}
