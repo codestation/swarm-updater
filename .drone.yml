@@ -1,6 +1,7 @@
 ---
 kind: pipeline
 name: default
+type: docker
 
 platform:
   os: linux
@@ -8,11 +9,11 @@ platform:
 
 steps:
   - name: test
-    image: golang:1.12
+    image: golang:1.16
     commands:
-      - go install -mod=vendor golang.org/x/lint/golint
-      - go vet -mod=vendor ./...
-      - go test -mod=vendor -v ./...
+      - go install golang.org/x/lint/golint
+      - go vet ./...
+      - go test -v ./...
       - golint -set_exit_status `find . -type d -not -path "./vendor*" -not -path "./.git*"`
     settings:
       environment:
