@@ -61,6 +61,7 @@ func runCron(schedule string, useLabels bool) error {
 		})
 
 	if err != nil {
+		cancel()
 		return fmt.Errorf("failed to setup cron, %w", err)
 	}
 
