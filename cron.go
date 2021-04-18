@@ -18,11 +18,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	"megpoid.xyz/go/swarm-updater/log"
 )
@@ -30,7 +30,7 @@ import (
 func runCron(schedule string, useLabels bool) error {
 	swarm, err := NewSwarm()
 	if err != nil {
-		return errors.Wrap(err, "cannot instantiate new Docker swarm client")
+		return fmt.Errorf("cannot instantiate new Docker swarm client: %w", err)
 	}
 
 	swarm.LabelEnable = useLabels
@@ -61,7 +61,7 @@ func runCron(schedule string, useLabels bool) error {
 		})
 
 	if err != nil {
-		return errors.Wrap(err, "failed to setup cron")
+		return fmt.Errorf("failed to setup cron, %w", err)
 	}
 
 	log.Debug("Configured cron schedule: %s", schedule)

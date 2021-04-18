@@ -21,7 +21,6 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 	"megpoid.xyz/go/swarm-updater/log"
 )
@@ -52,7 +51,7 @@ func initialize(c *cli.Context) error {
 
 	err := envConfig(c)
 	if err != nil {
-		return errors.Wrap(err, "failed to sync environment")
+		return fmt.Errorf("failed to sync environment: %w", err)
 	}
 
 	log.EnableDebug(c.Bool("debug"))
@@ -62,7 +61,7 @@ func initialize(c *cli.Context) error {
 		for _, entry := range list {
 			regex, err := regexp.Compile(entry)
 			if err != nil {
-				return errors.Wrap(err, "failed to compile blacklist regex")
+				return fmt.Errorf("failed to compile blacklist regex: %w", err)
 			}
 
 			blacklist = append(blacklist, regex)
