@@ -100,7 +100,7 @@ func main() {
 		cli.StringFlag{
 			Name:   "schedule, s",
 			Usage:  "cron schedule",
-			Value:  "@every 5m",
+			Value:  "@every 1h",
 			EnvVar: "SCHEDULE",
 		},
 		cli.BoolFlag{
