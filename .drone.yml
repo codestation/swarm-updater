@@ -14,7 +14,7 @@ steps:
       - golangci-lint run --no-config -v --timeout 10m ./...
 
   - name: test
-    image: golang:1.16-alpine
+    image: golang:1.16
     commands:
       - go test -coverprofile cover.out -v ./...
       - go tool cover -func cover.out
