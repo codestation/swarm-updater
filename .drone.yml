@@ -11,7 +11,7 @@ steps:
   - name: lint
     image: golangci/golangci-lint:v1.39.0
     commands:
-      - golangci-lint run --no-config -v ./...
+      - golangci-lint run --no-config -v --timeout 10m ./...
 
   - name: test
     image: golang:1.16-alpine
