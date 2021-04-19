@@ -12,6 +12,9 @@ steps:
     image: golangci/golangci-lint:v1.39.0
     commands:
       - golangci-lint run --no-config -v --timeout 10m ./...
+    settings:
+      environment:
+        - GOGC=20
 
   - name: test
     image: golang:1.16
