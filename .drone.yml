@@ -10,7 +10,8 @@ platform:
 steps:
   - name: test
     image: golangci/golangci-lint:v1.39.0
-    commands: golangci-lint run -v
+    commands:
+      - golangci-lint run -v
 
   - name: build
     image: plugins/docker
