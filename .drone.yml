@@ -21,6 +21,7 @@ steps:
     commands:
       - go test -coverprofile cover.out -v ./...
       - go tool cover -func cover.out
+
   - name: build
     image: plugins/docker
     settings:
@@ -37,6 +38,13 @@ steps:
         from_secret: docker_username
       password:
         from_secret: docker_password
+
+  - name: update
+    image: plugins/webhook
+    settings:
+      urls: http://updater:8000/apis/swarm/v1/update
+      token_value:
+        from_secret: updater_appkey
 
 trigger:
   branch:
