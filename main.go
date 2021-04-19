@@ -41,6 +41,7 @@ Built:        %s
 Compilation:  %s
 `
 
+// UpdateRequest has a list of images that should be updated on the services that uses them
 type UpdateRequest struct {
 	Images []string `json:"images"`
 }
