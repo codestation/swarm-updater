@@ -10,7 +10,7 @@ WORKDIR /app
 COPY . .
 
 RUN CGO_ENABLED=0 go build -o release/swarm-updater \
-   -mod vendor -ldflags "-w -s \
+   -ldflags "-w -s \
    -X main.Version=${CI_TAG} \
    -X main.BuildNumber=${BUILD_NUMBER} \
    -X main.Commit=${BUILD_COMMIT_SHORT} \
