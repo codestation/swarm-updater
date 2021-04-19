@@ -17,9 +17,16 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"net/http"
 	"os"
+	"os/signal"
 	"regexp"
+	"syscall"
+	"time"
 
 	"github.com/urfave/cli"
 	"megpoid.xyz/go/swarm-updater/log"
@@ -34,8 +41,77 @@ Built:        %s
 Compilation:  %s
 `
 
+type UpdateRequest struct {
+	Images []string `json:"images"`
+}
+
 func run(c *cli.Context) error {
-	return runCron(c.String("schedule"), c.Bool("label-enable"))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	swarm, err := NewSwarm()
+	if err != nil {
+		return fmt.Errorf("cannot instantiate new Docker swarm client: %w", err)
+	}
+
+	swarm.LabelEnable = c.Bool("label-enable")
+	swarm.Blacklist = blacklist
+
+	cron, err := NewCronService(c.String("schedule"), func() {
+		if err := swarm.UpdateServices(ctx); err != nil {
+			log.Printf("Cannot update services: %s", err.Error())
+		}
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to setup cron, %w", err)
+	}
+
+	e := echo.New()
+	e.HideBanner = true
+	e.Debug = c.Bool("debug")
+	e.Use(middleware.Recover())
+	apiKey := c.String("apikey")
+	e.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+		return key == apiKey, nil
+	}))
+
+	e.POST("/apis/swarm/v1/update", func(c echo.Context) error {
+		req := &UpdateRequest{}
+		if err := c.Bind(req); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Bind:"+err.Error())
+		}
+		if err := swarm.UpdateServices(c.Request().Context(), req.Images...); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Swarm update:"+err.Error())
+		}
+		return c.NoContent(http.StatusNoContent)
+	})
+
+	svr := &http.Server{
+		Addr:         c.String("listen"),
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+	}
+
+	go func() {
+		if err := e.StartServer(svr); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Web server failed: %s", err.Error())
+		}
+	}()
+
+	cron.Start()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	if err := e.Shutdown(ctx); err != nil {
+		log.Fatal(err)
+	}
+
+	cron.Stop()
+
+	return nil
 }
 
 func initialize(c *cli.Context) error {
@@ -117,6 +193,17 @@ func main() {
 			Name:   "debug, d",
 			Usage:  "enable debug logging",
 			EnvVar: "DEBUG",
+		},
+		cli.StringFlag{
+			Name:   "listen, a",
+			Usage:  "listen address",
+			Value:  ":8000",
+			EnvVar: "LISTEN",
+		},
+		cli.StringFlag{
+			Name:   "apikey, k",
+			Usage:  "api key to protect endpoint",
+			EnvVar: "APIKEY",
 		},
 	}
 

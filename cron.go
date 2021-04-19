@@ -17,69 +17,55 @@ limitations under the License.
 package main
 
 import (
-	"context"
-	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-
 	"github.com/robfig/cron/v3"
 	"megpoid.xyz/go/swarm-updater/log"
 )
 
-func runCron(schedule string, useLabels bool) error {
-	swarm, err := NewSwarm()
-	if err != nil {
-		return fmt.Errorf("cannot instantiate new Docker swarm client: %w", err)
-	}
+type CronService struct {
+	cronService *cron.Cron
+	tryLockSem  chan bool
+}
 
-	swarm.LabelEnable = useLabels
-	swarm.Blacklist = blacklist
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	tryLockSem := make(chan bool, 1)
-	tryLockSem <- true
-
-	// retain non standard seconds support
+func NewCronService(schedule string, cronFunc func()) (*CronService, error) {
 	cronService := cron.New(cron.WithParser(cron.NewParser(
 		cron.SecondOptional | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor,
 	)))
 
-	_, err = cronService.AddFunc(
+	tryLockSem := make(chan bool, 1)
+	tryLockSem <- true
+
+	_, err := cronService.AddFunc(
 		schedule,
 		func() {
 			select {
 			case v := <-tryLockSem:
 				defer func() { tryLockSem <- v }()
-				if err := swarm.UpdateServices(ctx); err != nil {
-					log.Printf("Cannot update services: %s", err.Error())
-				}
+				cronFunc()
 			default:
-				log.Debug("Skipped service update. Already running")
+				log.Debug("Skipped cron function. Already running")
 			}
 		})
 
 	if err != nil {
-		cancel()
-		return fmt.Errorf("failed to setup cron, %w", err)
+		return nil, err
 	}
 
 	log.Debug("Configured cron schedule: %s", schedule)
 
-	cronService.Start()
+	return &CronService{
+		cronService: cronService,
+		tryLockSem:  tryLockSem,
+	}, nil
+}
 
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-	<-interrupt
+func (c *CronService) Start() {
+	c.cronService.Start()
+}
 
-	cancel()
-
-	cronCtx := cronService.Stop()
-	<-cronCtx.Done()
+func (c *CronService) Stop() {
+	ctx := c.cronService.Stop()
+	<-ctx.Done()
 
 	log.Println("Waiting for running update to be finished...")
-	<-tryLockSem
-
-	return nil
+	<-c.tryLockSem
 }

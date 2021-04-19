@@ -2,6 +2,17 @@
 
 Automatically update Docker services whenever their image is updated. Inspired on [v2tec/watchtower](https://github.com/v2tec/watchtower)
 
+## Update services on demand
+
+The endpoint `/apis/swarm/v1/update` can be called with a list of images that should be updated on matching services on the swarm.
+
+```json
+{
+  "images": [
+    "mycompany/myapp"
+  ]
+}
+```
 ## Options
 
 Every command-line option has their corresponding environment variable to configure the updater.
@@ -13,6 +24,8 @@ Every command-line option has their corresponding environment variable to config
 * `--blacklist, -b` Service that is excluded from updates. Can be defined multiple times and can be a regular expression. Either `--label-enable` or `--blacklist` can be defined, but not both. The comma separated list can also be provided by setting the `BLACKLIST` environment variable.
 * `--tlsverify, -t` Use TLS when connecting to the Docker socket and verify the server's certificate. The flag can also be provided by setting the `DOCKER_TLS_VERIFY` environment variable to `1`.
 * `--debug, -d` Enables debug logging. Can also be enabled by setting the `DEBUG=1` environment variable.
+* `--listen, -a` Address to listen for upcoming swarm update requests. Can also be enabled by setting the `LISTEN` environment variable.
+* `--apikey, -k` Key to protect the update endpoint. Can also be enabled by setting the `APIKEY` environment variable.
 * `--help, -h` Show documentation about the supported flags.
 
 ## Other environment variables

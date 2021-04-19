@@ -150,8 +150,9 @@ func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error 
 	return nil
 }
 
-// UpdateServices updates all the services from a Docker swarm
-func (c *Swarm) UpdateServices(ctx context.Context) error {
+// UpdateServices updates all the services from a Docker swarm that matches the specified image name.
+// If no images are passed then it updates all the services.
+func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 	services, err := c.serviceList(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get service list: %w", err)
@@ -166,6 +167,12 @@ func (c *Swarm) UpdateServices(ctx context.Context) error {
 			if _, ok := service.Spec.Annotations.Labels[serviceLabel]; ok {
 				serviceID = service.ID
 				continue
+			}
+
+			for _, imageMatch := range imageName {
+				if strings.HasPrefix(service.Spec.TaskTemplate.ContainerSpec.Image, imageMatch) {
+					continue
+				}
 			}
 
 			if err = c.updateService(ctx, service); err != nil {
