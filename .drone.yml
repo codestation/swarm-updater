@@ -8,11 +8,16 @@ platform:
   arch: amd64
 
 steps:
-  - name: test
+  - name: lint
     image: golangci/golangci-lint:v1.39.0
     commands:
-      - golangci-lint run -v
+      - golangci-lint run --no-config -v ./...
 
+  - name: test
+    image: golang:1.16-alpine
+    commands:
+      - go test -coverprofile cover.out -v ./...
+      - go tool cover -func cover.out
   - name: build
     image: plugins/docker
     settings:
