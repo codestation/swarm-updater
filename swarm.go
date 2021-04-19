@@ -46,6 +46,7 @@ type Swarm struct {
 func (c *Swarm) validService(service swarm.Service) bool {
 	if c.LabelEnable {
 		label := service.Spec.Labels[enabledServiceLabel]
+
 		return strings.ToLower(label) == "true"
 	}
 
@@ -114,6 +115,7 @@ func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error 
 
 	if image == service.Spec.TaskTemplate.ContainerSpec.Image {
 		log.Debug("Service %s is already up to date", service.Spec.Name)
+
 		return nil
 	}
 
@@ -166,11 +168,21 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 			// try to identify this service
 			if _, ok := service.Spec.Annotations.Labels[serviceLabel]; ok {
 				serviceID = service.ID
+
 				continue
 			}
 
-			for _, imageMatch := range imageName {
-				if strings.HasPrefix(service.Spec.TaskTemplate.ContainerSpec.Image, imageMatch) {
+			if len(imageName) > 0 {
+				hasMatch := false
+				for _, imageMatch := range imageName {
+					if strings.HasPrefix(service.Spec.TaskTemplate.ContainerSpec.Image, imageMatch) {
+						hasMatch = true
+
+						break
+					}
+				}
+
+				if !hasMatch {
 					continue
 				}
 			}
@@ -178,6 +190,7 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 			if err = c.updateService(ctx, service); err != nil {
 				if ctx.Err() == context.Canceled {
 					log.Printf("Service update canceled")
+
 					break
 				}
 				log.Printf("Cannot update service %s: %s", service.Spec.Name, err.Error())

@@ -19,8 +19,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"net/http"
 	"os"
 	"os/signal"
@@ -28,6 +26,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/urfave/cli"
 	"megpoid.xyz/go/swarm-updater/log"
 )
@@ -85,6 +85,7 @@ func run(c *cli.Context) error {
 		if err := swarm.UpdateServices(c.Request().Context(), req.Images...); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Swarm update:"+err.Error())
 		}
+
 		return c.NoContent(http.StatusNoContent)
 	})
 
@@ -211,8 +212,7 @@ func main() {
 	app.Before = initialize
 	app.Action = run
 
-	err := app.Run(os.Args)
-	if err != nil {
+	if err := app.Run(os.Args); err != nil {
 		log.Fatalf("Unrecoverable error: %s", err.Error())
 	}
 }

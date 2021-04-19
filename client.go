@@ -10,7 +10,7 @@ import (
 	"github.com/docker/docker/client"
 )
 
-// DockerClient interacts with a Docker Swarm
+// DockerClient interacts with a Docker Swarm.
 type DockerClient interface {
 	DistributionInspect(ctx context.Context, image, encodedAuth string) (registry.DistributionInspect, error)
 	RetrieveAuthTokenFromImage(ctx context.Context, image string) (string, error)

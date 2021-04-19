@@ -32,13 +32,15 @@ func setEnvOptStr(env string, opt string) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
 func setEnvOptBool(env string, opt bool) error {
-	if opt == true {
+	if opt {
 		return setEnvOptStr(env, "1")
 	}
+
 	return nil
 }
 

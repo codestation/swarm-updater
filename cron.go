@@ -21,13 +21,13 @@ import (
 	"megpoid.xyz/go/swarm-updater/log"
 )
 
-// CronService holds the instantiated cron service
+// CronService holds the instantiated cron service.
 type CronService struct {
 	cronService *cron.Cron
 	tryLockSem  chan bool
 }
 
-// NewCronService creates a new cron for the specified function
+// NewCronService creates a new cron for the specified function.
 func NewCronService(schedule string, cronFunc func()) (*CronService, error) {
 	cronService := cron.New(cron.WithParser(cron.NewParser(
 		cron.SecondOptional | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor,
@@ -60,12 +60,12 @@ func NewCronService(schedule string, cronFunc func()) (*CronService, error) {
 	}, nil
 }
 
-// Start initiates the cron schedule
+// Start initiates the cron schedule.
 func (c *CronService) Start() {
 	c.cronService.Start()
 }
 
-// Stop cancel the schedule and wait until the currently running function is finished
+// Stop cancel the schedule and wait until the currently running function is finished.
 func (c *CronService) Stop() {
 	ctx := c.cronService.Stop()
 	<-ctx.Done()

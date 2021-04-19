@@ -37,7 +37,7 @@ func nullLogger(_ string, _ ...interface{}) {
 	// no-op
 }
 
-// EnableDebug show/hides debug logs
+// EnableDebug show/hides debug logs.
 func EnableDebug(debug bool) {
 	if debug {
 		Debug = log.Printf

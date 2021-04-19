@@ -6,12 +6,11 @@ import (
 	"regexp"
 	"testing"
 
-	"megpoid.xyz/go/swarm-updater/log"
-
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/api/types/swarm"
 	test "github.com/stretchr/testify/assert"
+	"megpoid.xyz/go/swarm-updater/log"
 )
 
 type dockerClientMock struct {
@@ -180,6 +179,7 @@ func TestUpdateServices(t *testing.T) {
 		}
 
 		assert.Fail("Should be on the service list", "%s isn't on service list", serviceID)
+
 		return swarm.Service{}, nil, fmt.Errorf("service not found: %s", serviceID)
 	}
 
@@ -199,6 +199,7 @@ func TestUpdateServices(t *testing.T) {
 		}
 
 		assert.Fail("Should be on the service list", "%s isn't on service list", serviceID)
+
 		return types.ServiceUpdateResponse{}, fmt.Errorf("service not found: %s", serviceID)
 	}
 
