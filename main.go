@@ -35,12 +35,7 @@ import (
 
 var blacklist []*regexp.Regexp
 
-const versionFormatter = `Swarm Updater
-Version:      %s
-Git commit:   %s
-Built:        %s
-Compilation:  %s
-`
+const versionFormatter = `Swarm Updater version %s, build %s`
 
 // UpdateRequest has a list of images that should be updated on the services that uses them
 type UpdateRequest struct {
@@ -125,11 +120,10 @@ func initialize(c *cli.Context) error {
 		log.Fatal("Do not define a blacklist if label-enable is enabled")
 	}
 
-	log.Printf("Starting swarm-updater, version: %s, commit: %s, built: %s, compilation: %s",
+	log.Printf("Starting Swarm Updater version %s, commit %s, built at %s",
 		Version,
 		Commit,
-		BuildTime,
-		BuildNumber)
+		BuildTime)
 
 	err := envConfig(c)
 	if err != nil {
@@ -156,7 +150,7 @@ func initialize(c *cli.Context) error {
 }
 
 func printVersion(c *cli.Context) {
-	_, _ = fmt.Fprintf(c.App.Writer, versionFormatter, Version, Commit, BuildTime, BuildNumber)
+	_, _ = fmt.Fprintf(c.App.Writer, versionFormatter, Version, Commit)
 }
 
 func main() {

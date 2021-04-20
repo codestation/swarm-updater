@@ -28,8 +28,6 @@ var (
 	Commit string
 	// BuildTime indicates the date when the binary was built (set by -ldflags)
 	BuildTime string
-	// BuildNumber indicates the compilation number
-	BuildNumber string
 )
 
 func init() {
@@ -49,8 +47,5 @@ func init() {
 		} else {
 			BuildTime = "unknown"
 		}
-	}
-	if BuildNumber == "" {
-		BuildNumber = "unknown"
 	}
 }

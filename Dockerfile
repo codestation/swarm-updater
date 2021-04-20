@@ -1,9 +1,9 @@
 FROM golang:1.16-alpine as builder
 
-ARG CI_TAG
-ARG BUILD_NUMBER
-ARG BUILD_COMMIT_SHORT
-ARG CI_BUILD_CREATED
+ARG CI_COMMIT_TAG
+ARG SOURCE_BRANCH
+ARG SOURCE_COMMIT
+ARG CI_PIPELINE_CREATED_AT
 ARG GOPROXY
 ENV GOPROXY=${GOPROXY}
 
@@ -12,10 +12,9 @@ COPY . .
 
 RUN CGO_ENABLED=0 go build -o release/swarm-updater \
    -ldflags "-w -s \
-   -X main.Version=${CI_TAG} \
-   -X main.BuildNumber=${BUILD_NUMBER} \
-   -X main.Commit=${BUILD_COMMIT_SHORT} \
-   -X main.BuildTime=${CI_BUILD_CREATED}"
+   -X main.Version=${CI_COMMIT_TAG:-$SOURCE_BRANCH} \
+   -X main.Commit=${SOURCE_COMMIT:0:8} \
+   -X main.BuildTime=${CI_PIPELINE_CREATED_AT:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}"
 
 FROM alpine:3.13
 LABEL maintainer="codestation <codestation404@gmail.com>"
