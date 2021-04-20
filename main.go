@@ -120,7 +120,7 @@ func initialize(c *cli.Context) error {
 		log.Fatal("Do not define a blacklist if label-enable is enabled")
 	}
 
-	log.Printf("Starting Swarm Updater version %s, commit %s, built at %s",
+	log.Printf("Starting Swarm Updater version: %s, commit: %s, built at: %s",
 		Version,
 		Commit,
 		BuildTime)
