@@ -18,9 +18,10 @@ steps:
     commands:
       - go test -coverprofile cover.out -v ./...
       - go tool cover -func cover.out
-    settings:
-      environment:
-        - GOPROXY=http://goproxy:3000,https://proxy.golang.org,direct
+    environment:
+      GONOSUMDB: git.megpoid.xyz/*
+      GOPROXY:
+        from_secret: goproxy_url
 
   - name: build
     image: plugins/docker
@@ -28,22 +29,26 @@ steps:
       repo: registry.megpoid.xyz/swarm-updater
       tags: latest
       registry: registry.megpoid.xyz
-      mirror: http://mirror:5000
+      mirror: http://registry:5000
+      build_args_from_env:
+        - GOPROXY
       build_args:
         - CI_TAG=${DRONE_TAG}
         - BUILD_NUMBER=${DRONE_BUILD_NUMBER}
         - BUILD_COMMIT_SHORT=${DRONE_COMMIT_SHA:0:8}
         - CI_BUILD_CREATED=${DRONE_BUILD_CREATED}
-        - GOPROXY=http://goproxy:3000,https://proxy.golang.org,direct
+        - GONOSUMDB="git.megpoid.xyz/*"
       username:
         from_secret: docker_username
       password:
         from_secret: docker_password
+    environment:
+      GOPROXY:
+        from_secret: goproxy_url
 
   - name: update
     image: plugins/webhook
     settings:
-      debug: true
       urls: http://updater:8000/apis/swarm/v1/update
       token_value:
         from_secret: updater_appkey
