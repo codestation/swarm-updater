@@ -12,15 +12,15 @@ steps:
     image: golangci/golangci-lint:v1.39.0
     commands:
       - golangci-lint run --no-config -v --timeout 10m ./...
-    settings:
-      environment:
-        - GOGC=20
 
   - name: test
     image: golang:1.16
     commands:
       - go test -coverprofile cover.out -v ./...
       - go tool cover -func cover.out
+    settings:
+      environment:
+        - GOPROXY=http://goproxy:3000,https://proxy.golang.org,direct
 
   - name: build
     image: plugins/docker
@@ -34,6 +34,7 @@ steps:
         - BUILD_NUMBER=${DRONE_BUILD_NUMBER}
         - BUILD_COMMIT_SHORT=${DRONE_COMMIT_SHA:0:8}
         - CI_BUILD_CREATED=${DRONE_BUILD_CREATED}
+        - GOPROXY=http://goproxy:3000,https://proxy.golang.org,direct
       username:
         from_secret: docker_username
       password:
@@ -42,10 +43,16 @@ steps:
   - name: update
     image: plugins/webhook
     settings:
+      debug: true
       urls: http://updater:8000/apis/swarm/v1/update
       token_value:
         from_secret: updater_appkey
-
+      template: |
+        {
+          "images": [
+            "registry.megpoid.xyz/swarm-updater"
+          ]
+        }
 trigger:
   branch:
     - master

@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
+	"strings"
 	"syscall"
 	"time"
 
@@ -82,6 +83,9 @@ func run(c *cli.Context) error {
 		if err := c.Bind(req); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Bind:"+err.Error())
 		}
+
+		log.Printf("Called update endpoint with images: %s", strings.Join(req.Images, ", "))
+
 		if err := swarm.UpdateServices(c.Request().Context(), req.Images...); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Swarm update:"+err.Error())
 		}
