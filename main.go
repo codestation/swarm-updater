@@ -135,7 +135,13 @@ func initialize(c *cli.Context) error {
 	if c.IsSet("blacklist") {
 		list := c.StringSlice("blacklist")
 		for _, entry := range list {
-			regex, err := regexp.Compile(entry)
+			rule := strings.TrimSpace(entry)
+			if rule == "" {
+				log.Println("Warning: ignoring empty rule in blacklist. Did you leave a trailing comma?")
+				continue
+			}
+
+			regex, err := regexp.Compile(rule)
 			if err != nil {
 				return fmt.Errorf("failed to compile blacklist regex: %w", err)
 			}
