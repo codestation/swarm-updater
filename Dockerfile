@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine as builder
+FROM --platform=$TARGETPLATFORM golang:1.16-alpine as builder
 
 ARG CI_COMMIT_TAG
 ARG CI_COMMIT_BRANCH
@@ -16,7 +16,7 @@ RUN CGO_ENABLED=0 go build -o release/swarm-updater \
    -X main.Commit=${CI_COMMIT_SHA:0:8} \
    -X main.BuildTime=${CI_PIPELINE_CREATED_AT}"
 
-FROM alpine:3.13
+FROM --platform=$TARGETPLATFORM alpine:3.13
 LABEL maintainer="codestation <codestation404@gmail.com>"
 
 RUN apk add --no-cache ca-certificates tzdata
