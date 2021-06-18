@@ -55,7 +55,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.prep.outputs.tags }}
           build-args: |
-            CI_COMMIT_BRANCH${{ steps.prep.outputs.branch }}
+            CI_COMMIT_BRANCH=${{ steps.prep.outputs.branch }}
             CI_COMMIT_SHA=${{ github.sha }}
             CI_PIPELINE_CREATED_AT=${{ steps.prep.outputs.timestamp }}
           labels: |
