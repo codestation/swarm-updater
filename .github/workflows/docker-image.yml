@@ -5,7 +5,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build_immage:
+  build_image:
     runs-on: ubuntu-latest
     steps:
       -
@@ -54,7 +54,10 @@ jobs:
           platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/386
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.prep.outputs.tags }}
-          build-args: CI_COMMIT_BRANCH=${{ steps.prep.outputs.branch }},CI_COMMIT_SHA=${{ github.sha }},CI_PIPELINE_CREATED_AT=${{ steps.prep.outputs.timestamp }}
+          build-args: |
+            CI_COMMIT_BRANCH${{ steps.prep.outputs.branch }}
+            CI_COMMIT_SHA=${{ github.sha }}
+            CI_PIPELINE_CREATED_AT=${{ steps.prep.outputs.timestamp }}
           labels: |
             org.opencontainers.image.title=${{ fromJson(steps.repo.outputs.result).name }}
             org.opencontainers.image.description=${{ fromJson(steps.repo.outputs.result).description }}
