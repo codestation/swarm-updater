@@ -5,7 +5,7 @@ type: docker
 
 platform:
   os: linux
-  arch: amd64
+  arch: arm64
 
 steps:
   - name: lint
@@ -14,7 +14,7 @@ steps:
       - golangci-lint run --no-config -v --timeout 10m ./...
 
   - name: test
-    image: golang:1.16
+    image: golang:1.17
     commands:
       - go test -coverprofile cover.out -v ./...
       - go tool cover -func cover.out
@@ -23,11 +23,18 @@ steps:
         from_secret: goproxy_url
 
   - name: build
-    image: registry.corp.megpoid.xyz/codestation/drone-docker
+    image: registry.megpoid.xyz/codestation/drone-docker
     settings:
-      repo: registry.corp.megpoid.xyz/codestation/swarm-updater
+      cache:
+        - registry.megpoid.xyz/codestation/swarm-updater:${DRONE_BRANCH}-cache
+      repos:
+        - registry.megpoid.xyz/codestation/swarm-updater
+        - codestation/swarm-updater
       tags: latest
-      registry: registry.corp.megpoid.xyz
+      registry: registry.megpoid.xyz
+      platforms:
+        - linux/amd64
+        - linux/arm64
       buildkit: true
       build_args:
         - CI_COMMIT_TAG=${DRONE_TAG}
@@ -51,7 +58,7 @@ steps:
       template: |
         {
           "images": [
-            "registry.corp.megpoid.xyz/codestation/swarm-updater"
+            "registry.megpoid.xyz/codestation/swarm-updater"
           ]
         }
 
