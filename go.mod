@@ -6,7 +6,7 @@ require (
 	github.com/docker/cli v20.10.12+incompatible
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v20.10.12+incompatible
-	github.com/labstack/echo/v4 v4.6.1
+	github.com/labstack/echo/v4 v4.6.3
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli v1.22.5
@@ -15,7 +15,7 @@ require (
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
-	github.com/Microsoft/hcsshim v0.9.1 // indirect
+	github.com/Microsoft/hcsshim v0.9.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bugsnag/bugsnag-go v1.4.0 // indirect
 	github.com/bugsnag/panicwrap v1.2.0 // indirect
@@ -54,7 +54,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.11.0 // indirect
+	github.com/prometheus/client_golang v1.12.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
@@ -65,14 +65,14 @@ require (
 	github.com/theupdateframework/notary v0.7.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect
-	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
-	golang.org/x/net v0.0.0-20220107192237-5cfca573fb4d // indirect
-	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
+	golang.org/x/crypto v0.0.0-20220128200615-198e4374d7ed // indirect
+	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
+	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11 // indirect
-	google.golang.org/genproto v0.0.0-20220107163113-42d7afdf6368 // indirect
-	google.golang.org/grpc v1.43.0 // indirect
+	google.golang.org/genproto v0.0.0-20220126215142-9970aeb2e350 // indirect
+	google.golang.org/grpc v1.44.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
