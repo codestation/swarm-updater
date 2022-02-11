@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/docker/cli v20.10.12+incompatible
-	github.com/docker/distribution v2.7.1+incompatible
+	github.com/docker/distribution v2.8.0+incompatible
 	github.com/docker/docker v20.10.12+incompatible
 	github.com/labstack/echo/v4 v4.6.3
 	github.com/robfig/cron/v3 v3.0.1
