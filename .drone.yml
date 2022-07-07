@@ -9,12 +9,12 @@ platform:
 
 steps:
   - name: lint
-    image: golangci/golangci-lint:v1.44.2
+    image: golangci/golangci-lint:v1.46.2
     commands:
       - golangci-lint run --no-config -v --timeout 10m ./...
 
   - name: test
-    image: golang:1.17
+    image: golang:1.18
     commands:
       - go test -coverprofile cover.out -v ./...
       - go tool cover -func cover.out
@@ -23,7 +23,7 @@ steps:
         from_secret: goproxy_url
 
   - name: build
-    image: registry.megpoid.xyz/codestation/drone-docker
+    image: ghcr.io/codestation/drone-docker
     settings:
       cache:
         - registry.megpoid.xyz/codestation/swarm-updater:${DRONE_BRANCH}-cache
