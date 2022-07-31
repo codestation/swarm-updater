@@ -10,7 +10,7 @@ import (
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/api/types/swarm"
 	test "github.com/stretchr/testify/assert"
-	"megpoid.xyz/go/swarm-updater/log"
+	"megpoid.dev/go/swarm-updater/log"
 )
 
 type dockerClientMock struct {

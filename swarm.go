@@ -29,7 +29,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
-	"megpoid.xyz/go/swarm-updater/log"
+	"megpoid.dev/go/swarm-updater/log"
 )
 
 const serviceLabel string = "xyz.megpoid.swarm-updater"

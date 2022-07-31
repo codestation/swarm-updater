@@ -12,6 +12,9 @@ steps:
     image: golangci/golangci-lint:v1.46.2
     commands:
       - golangci-lint run --no-config -v --timeout 10m ./...
+    environment:
+      GOPROXY:
+        from_secret: goproxy_url
 
   - name: test
     image: golang:1.18
@@ -26,12 +29,12 @@ steps:
     image: ghcr.io/codestation/drone-docker
     settings:
       cache:
-        - registry.megpoid.xyz/codestation/swarm-updater:${DRONE_BRANCH}-cache
+        - registry.megpoid.dev/codestation/swarm-updater:${DRONE_BRANCH}-cache
       repos:
-        - registry.megpoid.xyz/codestation/swarm-updater
+        - registry.megpoid.dev/codestation/swarm-updater
         - codestation/swarm-updater
       tags: latest
-      registry: registry.megpoid.xyz
+      registry: registry.megpoid.dev
       platforms:
         - linux/amd64
         - linux/arm64
@@ -54,11 +57,11 @@ steps:
     settings:
       urls: http://updater:8000/apis/swarm/v1/update
       token_value:
-        from_secret: updater_appkey
+        from_secret: updater_apikey
       template: |
         {
           "images": [
-            "registry.megpoid.xyz/codestation/swarm-updater"
+            "registry.megpoid.dev/codestation/swarm-updater"
           ]
         }
 

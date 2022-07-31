@@ -18,7 +18,7 @@ package main
 
 import (
 	"github.com/robfig/cron/v3"
-	"megpoid.xyz/go/swarm-updater/log"
+	"megpoid.dev/go/swarm-updater/log"
 )
 
 // CronService holds the instantiated cron service.

@@ -30,7 +30,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/urfave/cli"
-	"megpoid.xyz/go/swarm-updater/log"
+	"megpoid.dev/go/swarm-updater/log"
 )
 
 var blacklist []*regexp.Regexp
