@@ -35,7 +35,7 @@ import (
 
 var blacklist []*regexp.Regexp
 
-const versionFormatter = `Swarm Updater version %s, build %s`
+const versionFormatter = `Swarm Updater version: %s, commit: %s, date: %s, clean build: %t`
 
 // UpdateRequest has a list of images that should be updated on the services that uses them
 type UpdateRequest struct {
@@ -120,10 +120,7 @@ func initialize(c *cli.Context) error {
 		log.Fatal("Do not define a blacklist if label-enable is enabled")
 	}
 
-	log.Printf("Starting Swarm Updater version: %s, commit: %s, built at: %s",
-		Version,
-		Commit,
-		BuildTime)
+	log.Printf(versionFormatter, Tag, Revision, LastCommit, Modified)
 
 	err := envConfig(c)
 	if err != nil {
@@ -156,13 +153,13 @@ func initialize(c *cli.Context) error {
 }
 
 func printVersion(c *cli.Context) {
-	_, _ = fmt.Fprintf(c.App.Writer, versionFormatter, Version, Commit)
+	_, _ = fmt.Fprintf(c.App.Writer, versionFormatter, Tag, Revision, LastCommit, Modified)
 }
 
 func main() {
 	app := cli.NewApp()
 	app.Usage = "automatically update Docker services"
-	app.Version = Version
+	app.Version = Tag
 	cli.VersionPrinter = printVersion
 
 	app.Flags = []cli.Flag{

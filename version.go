@@ -17,35 +17,33 @@ limitations under the License.
 package main
 
 import (
-	"strconv"
+	"runtime/debug"
 	"time"
 )
 
 var (
-	// Version indicates the application version
-	Version string
-	// Commit indicates the git commit of the build
-	Commit string
-	// BuildTime indicates the date when the binary was built (set by -ldflags)
-	BuildTime string
+	// Tag indicates the commit tag
+	Tag = "none"
+	// Revision indicates the git commit of the build
+	Revision = "unknown"
+	// LastCommit indicates the date of the commit
+	LastCommit time.Time
+	// Modified indicates if the binary was built from a unmodified source code
+	Modified = true
 )
 
 func init() {
-	if Version == "" {
-		Version = "unknown"
-	}
-	if Commit == "" {
-		Commit = "unknown"
-	}
-	if BuildTime == "" {
-		BuildTime = "unknown"
-	} else {
-		i, err := strconv.ParseInt(BuildTime, 10, 64)
-		if err == nil {
-			tm := time.Unix(i, 0)
-			BuildTime = tm.Format("Mon Jan _2 15:04:05 2006")
-		} else {
-			BuildTime = "unknown"
+	info, ok := debug.ReadBuildInfo()
+	if ok {
+		for _, setting := range info.Settings {
+			switch setting.Key {
+			case "vcs.revision":
+				Revision = setting.Value
+			case "vcs.time":
+				LastCommit, _ = time.Parse(time.RFC3339, setting.Value)
+			case "vcs.modified":
+				Modified = setting.Value == "true"
+			}
 		}
 	}
 }
