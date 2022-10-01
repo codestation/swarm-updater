@@ -1,4 +1,4 @@
-FROM golang:1.18-alpine as builder
+FROM golang:1.19-alpine as builder
 
 ARG CI_COMMIT_TAG
 ARG GOPROXY
@@ -17,7 +17,7 @@ RUN set -ex; \
     -ldflags "-w -s \
     -X main.Tag=${CI_COMMIT_TAG}"
 
-FROM alpine:3.15
+FROM alpine:3.16
 LABEL maintainer="codestation <codestation@megpoid.dev>"
 
 RUN apk add --no-cache ca-certificates tzdata
