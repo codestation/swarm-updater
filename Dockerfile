@@ -17,7 +17,7 @@ RUN set -ex; \
     -ldflags "-w -s \
     -X main.Tag=${CI_COMMIT_TAG}"
 
-FROM alpine:3.16
+FROM alpine:3.17
 LABEL maintainer="codestation <codestation@megpoid.dev>"
 
 RUN apk add --no-cache ca-certificates tzdata
