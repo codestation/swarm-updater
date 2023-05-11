@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/docker/cli v20.10.21+incompatible
-	github.com/docker/distribution v2.8.1+incompatible
+	github.com/docker/distribution v2.8.2+incompatible
 	github.com/docker/docker v20.10.21+incompatible
 	github.com/labstack/echo/v4 v4.9.1
 	github.com/robfig/cron/v3 v3.0.1
