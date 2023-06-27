@@ -53,8 +53,14 @@ func run(c *cli.Context) error {
 
 	swarm.LabelEnable = c.Bool("label-enable")
 	swarm.Blacklist = blacklist
+	schedule := c.String("schedule")
 
-	cron, err := NewCronService(c.String("schedule"), func() {
+	// update the services and exit, if requested
+	if schedule == "none" {
+		return swarm.UpdateServices(ctx)
+	}
+
+	cron, err := NewCronService(schedule, func() {
 		if err := swarm.UpdateServices(ctx); err != nil {
 			log.Printf("Cannot update services: %s", err.Error())
 		}
