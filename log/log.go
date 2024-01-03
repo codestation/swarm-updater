@@ -30,6 +30,11 @@ var Fatalf = log.Fatalf
 // Printf calls Output to print to the standard logger.
 var Printf = log.Printf
 
+// Errorf calls Output to print to the standard logger.
+var Errorf = func(format string, v ...any) {
+	log.Printf("err: "+format, v...)
+}
+
 // Debug calls Output to print to the standard logger if enabled.
 var Debug = nullLogger
 

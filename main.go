@@ -53,6 +53,7 @@ func run(c *cli.Context) error {
 
 	swarm.LabelEnable = c.Bool("label-enable")
 	swarm.Blacklist = blacklist
+	swarm.MaxThreads = c.Int("max-threads")
 	schedule := c.String("schedule")
 
 	// update the services and exit, if requested
@@ -213,6 +214,11 @@ func main() {
 			Name:   "apikey, k",
 			Usage:  "api key to protect endpoint",
 			EnvVar: "APIKEY",
+		},
+		cli.IntFlag{
+			Name:   "max-threads, m",
+			Usage:  "max threads",
+			EnvVar: "MAX_THREADS",
 		},
 	}
 

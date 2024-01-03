@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
@@ -41,6 +42,7 @@ type Swarm struct {
 	client      DockerClient
 	Blacklist   []*regexp.Regexp
 	LabelEnable bool
+	MaxThreads  int
 }
 
 func (c *Swarm) validService(service swarm.Service) bool {
@@ -160,58 +162,80 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 		return fmt.Errorf("failed to get service list: %w", err)
 	}
 
-	var serviceID string
+	// var serviceID string
 
-	for _, service := range services {
-		if c.validService(service) {
+	wg := sync.WaitGroup{}
+	wgCount := 0
+
+	for _, ss := range services {
+		if wgCount >= c.MaxThreads {
+			wg.Wait()
+		}
+
+		wg.Add(1)
+		wgCount++
+
+		go func(service swarm.Service) {
+			// service := *s
+			log.Printf("handling service: %s", service.Spec.Name)
+
+			defer func() {
+				wgCount--
+				wg.Done()
+			}()
+
+			if !c.validService(service) {
+				log.Debug("Service %s was ignored by blacklist or missing label", service.Spec.Name)
+				return
+			}
 
 			// try to identify this service
-			if _, ok := service.Spec.Annotations.Labels[serviceLabel]; ok {
-				serviceID = service.ID
-
-				continue
-			}
+			// if _, ok := service.Spec.Annotations.Labels[serviceLabel]; ok {
+			// 	serviceID = service.ID
+			// 	return
+			// }
 
 			if len(imageName) > 0 {
 				hasMatch := false
 				for _, imageMatch := range imageName {
 					if strings.HasPrefix(service.Spec.TaskTemplate.ContainerSpec.Image, imageMatch) {
 						hasMatch = true
-
 						break
 					}
 				}
 
 				if !hasMatch {
-					continue
+					return
 				}
 			}
 
 			if err = c.updateService(ctx, service); err != nil {
 				if ctx.Err() == context.Canceled {
 					log.Printf("Service update canceled")
-
-					break
+					return
 				}
+
 				log.Printf("Cannot update service %s: %s", service.Spec.Name, err.Error())
 			}
-		} else {
-			log.Debug("Service %s was ignored by blacklist or missing label", service.Spec.Name)
-		}
+
+			// if serviceID != "" {
+			// 	// refresh service
+			// 	service, _, err := c.client.ServiceInspectWithRaw(ctx, serviceID, types.ServiceInspectOptions{})
+			// 	if err != nil {
+			// 		log.Errorf("cannot inspect the service %s: %w", serviceID, err)
+			// 		return
+			// 	}
+
+			// 	err = c.updateService(ctx, service)
+			// 	if err != nil {
+			// 		log.Errorf("failed to update the service %s: %w", serviceID, err)
+			// 		return
+			// 	}
+			// }
+		}(ss)
 	}
 
-	if serviceID != "" {
-		// refresh service
-		service, _, err := c.client.ServiceInspectWithRaw(ctx, serviceID, types.ServiceInspectOptions{})
-		if err != nil {
-			return fmt.Errorf("cannot inspect the service %s: %w", serviceID, err)
-		}
-
-		err = c.updateService(ctx, service)
-		if err != nil {
-			return fmt.Errorf("failed to update the service %s: %w", serviceID, err)
-		}
-	}
+	wg.Wait()
 
 	return nil
 }
