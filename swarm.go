@@ -165,35 +165,36 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 	// var serviceID string
 
 	wg := sync.WaitGroup{}
-	wgCount := 0
 
-	for _, ss := range services {
-		if wgCount >= c.MaxThreads {
-			wg.Wait()
-		}
+	serviceLock := sync.Mutex{}
 
+	// create a temporary copy for the queue
+	serviceQueue := append([]swarm.Service{}, services...)
+
+	// only create as many as we need
+	threads := c.MaxThreads
+	if len(serviceQueue) < threads {
+		threads = len(serviceQueue)
+	}
+
+	for i := 0; i < threads; i++ {
 		wg.Add(1)
-		wgCount++
+		go func() {
+			defer wg.Done()
 
-		go func(service swarm.Service) {
-			// service := *s
-			log.Printf("handling service: %s", service.Spec.Name)
+			if len(serviceQueue) == 0 {
+				return
+			}
 
-			defer func() {
-				wgCount--
-				wg.Done()
-			}()
+			serviceLock.Lock()
+			service, newQueue := serviceQueue[0], serviceQueue[1:]
+			serviceQueue = newQueue
+			serviceLock.Unlock()
 
 			if !c.validService(service) {
 				log.Debug("Service %s was ignored by blacklist or missing label", service.Spec.Name)
 				return
 			}
-
-			// try to identify this service
-			// if _, ok := service.Spec.Annotations.Labels[serviceLabel]; ok {
-			// 	serviceID = service.ID
-			// 	return
-			// }
 
 			if len(imageName) > 0 {
 				hasMatch := false
@@ -217,22 +218,7 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 
 				log.Printf("Cannot update service %s: %s", service.Spec.Name, err.Error())
 			}
-
-			// if serviceID != "" {
-			// 	// refresh service
-			// 	service, _, err := c.client.ServiceInspectWithRaw(ctx, serviceID, types.ServiceInspectOptions{})
-			// 	if err != nil {
-			// 		log.Errorf("cannot inspect the service %s: %w", serviceID, err)
-			// 		return
-			// 	}
-
-			// 	err = c.updateService(ctx, service)
-			// 	if err != nil {
-			// 		log.Errorf("failed to update the service %s: %w", serviceID, err)
-			// 		return
-			// 	}
-			// }
-		}(ss)
+		}()
 	}
 
 	wg.Wait()

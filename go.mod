@@ -1,6 +1,6 @@
 module megpoid.dev/go/swarm-updater
 
-go 1.20
+go 1.21
 
 require (
 	github.com/docker/cli v24.0.2+incompatible
