@@ -219,6 +219,7 @@ func main() {
 			Name:   "max-threads, m",
 			Usage:  "max threads",
 			EnvVar: "MAX_THREADS",
+			Value:  5,
 		},
 	}
 

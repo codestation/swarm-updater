@@ -92,6 +92,8 @@ func (c *Swarm) serviceList(ctx context.Context) ([]swarm.Service, error) {
 }
 
 func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error {
+	log.Printf("updating service %s", service.Spec.Name)
+
 	image := service.Spec.TaskTemplate.ContainerSpec.Image
 	updateOpts := types.ServiceUpdateOptions{}
 
@@ -162,14 +164,12 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 		return fmt.Errorf("failed to get service list: %w", err)
 	}
 
-	// var serviceID string
-
 	wg := sync.WaitGroup{}
-
 	serviceLock := sync.Mutex{}
 
 	// create a temporary copy for the queue
 	serviceQueue := append([]swarm.Service{}, services...)
+	log.Printf("found %d services", len(serviceQueue))
 
 	// only create as many as we need
 	threads := c.MaxThreads
@@ -177,12 +177,16 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 		threads = len(serviceQueue)
 	}
 
+	log.Printf("starting %d threads", threads)
+
 	for i := 0; i < threads; i++ {
 		wg.Add(1)
-		go func() {
+		go func(key int) {
 			defer wg.Done()
+			log.Printf("starting thread %d", key)
 
 			if len(serviceQueue) == 0 {
+				log.Printf("exiting thread %d", key)
 				return
 			}
 
@@ -218,7 +222,7 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 
 				log.Printf("Cannot update service %s: %s", service.Spec.Name, err.Error())
 			}
-		}()
+		}(i)
 	}
 
 	wg.Wait()
