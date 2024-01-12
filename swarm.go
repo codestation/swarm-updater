@@ -185,42 +185,44 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 			defer wg.Done()
 			log.Printf("starting thread %d", key)
 
-			if len(serviceQueue) == 0 {
-				log.Printf("exiting thread %d", key)
-				return
-			}
+			for {
+				if len(serviceQueue) == 0 {
+					log.Printf("exiting thread %d", key)
+					return
+				}
 
-			serviceLock.Lock()
-			service, newQueue := serviceQueue[0], serviceQueue[1:]
-			serviceQueue = newQueue
-			serviceLock.Unlock()
+				serviceLock.Lock()
+				service, newQueue := serviceQueue[0], serviceQueue[1:]
+				serviceQueue = newQueue
+				serviceLock.Unlock()
 
-			if !c.validService(service) {
-				log.Debug("Service %s was ignored by blacklist or missing label", service.Spec.Name)
-				return
-			}
+				if !c.validService(service) {
+					log.Debug("Service %s was ignored by blacklist or missing label", service.Spec.Name)
+					return
+				}
 
-			if len(imageName) > 0 {
-				hasMatch := false
-				for _, imageMatch := range imageName {
-					if strings.HasPrefix(service.Spec.TaskTemplate.ContainerSpec.Image, imageMatch) {
-						hasMatch = true
-						break
+				if len(imageName) > 0 {
+					hasMatch := false
+					for _, imageMatch := range imageName {
+						if strings.HasPrefix(service.Spec.TaskTemplate.ContainerSpec.Image, imageMatch) {
+							hasMatch = true
+							break
+						}
+					}
+
+					if !hasMatch {
+						return
 					}
 				}
 
-				if !hasMatch {
-					return
-				}
-			}
+				if err = c.updateService(ctx, service); err != nil {
+					if ctx.Err() == context.Canceled {
+						log.Printf("Service update canceled")
+						return
+					}
 
-			if err = c.updateService(ctx, service); err != nil {
-				if ctx.Err() == context.Canceled {
-					log.Printf("Service update canceled")
-					return
+					log.Printf("Cannot update service %s: %s", service.Spec.Name, err.Error())
 				}
-
-				log.Printf("Cannot update service %s: %s", service.Spec.Name, err.Error())
 			}
 		}(i)
 	}
