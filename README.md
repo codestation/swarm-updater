@@ -1,7 +1,21 @@
 # Swarm Updater
 
 Automatically update Docker services whenever their image is updated. Inspired
-on [v2tec/watchtower](https://github.com/v2tec/watchtower)
+on [containrrr/watchtower](https://github.com/containrrr/watchtower)
+
+## Delay swarm-updater to be the last updated service
+
+You must add the `xyz.megpoid.swarm-updater=true` label to your service so the updater can delay the update of itself as
+the last one.
+
+```
+    deploy:
+      labels:
+        - xyz.megpoid.swarm-updater=true
+      placement:
+        constraints:
+          - node.role == manager
+```
 
 ## Update services on demand
 
@@ -43,6 +57,7 @@ Every command-line option has their corresponding environment variable to config
 * `--listen, -a` Address to listen for upcoming swarm update requests. Can also be enabled by setting the `LISTEN`
   environment variable.
 * `--apikey, -k` Key to protect the update endpoint. Can also be enabled by setting the `APIKEY` environment variable.
+* `--max-threads, m` Max number of services that should be updating at once (default: 2)
 * `--help, -h` Show documentation about the supported flags.
 
 ## Other environment variables
@@ -54,11 +69,6 @@ Every command-line option has their corresponding environment variable to config
 
 A file must be placed on `~/.docker/config.json` with the registry credentials (can be overriden with `--config`
 or `DOCKER_CONFIG`). The file can be created by using `docker login <registry>` and saving the credentials.
-
-## Delay swarm-updater to be the last updated service
-
-You must add the `xyz.megpoid.swarm-updater=true` label to your service so the updater can delay the update of itself as
-the last one.
 
 ## Only update the image but don't run the container
 

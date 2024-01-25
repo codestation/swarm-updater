@@ -17,7 +17,7 @@ services:
       placement:
         constraints:
           - node.role == manager
-          
+
 secrets:
   config:
     file: ./config.json
