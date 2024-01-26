@@ -45,7 +45,7 @@ type Swarm struct {
 	MaxThreads  int
 }
 
-func (c *Swarm) validService(service *swarm.Service) bool {
+func (c *Swarm) validService(service swarm.Service) bool {
 	if c.LabelEnable {
 		label := service.Spec.Labels[enabledServiceLabel]
 
@@ -91,7 +91,7 @@ func (c *Swarm) serviceList(ctx context.Context) ([]swarm.Service, error) {
 	return services, nil
 }
 
-func (c *Swarm) updateService(ctx context.Context, service *swarm.Service) error {
+func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error {
 	log.Printf("updating service %s", service.Spec.Name)
 
 	image := service.Spec.TaskTemplate.ContainerSpec.Image
@@ -169,17 +169,17 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 	wg := sync.WaitGroup{}
 	serviceLock := sync.Mutex{}
 
-	var swarmUpdaterService *swarm.Service
-	var serviceQueue []*swarm.Service = make([]*swarm.Service, 0)
+	var swarmUpdaterService swarm.Service = swarm.Service{ID: "na"}
+	var serviceQueue []swarm.Service = make([]swarm.Service, 0)
 
 	// find swarm-updater and remove itself from the list to update last
 	for _, service := range services {
 		if _, ok := service.Spec.Annotations.Labels[serviceLabel]; ok {
-			swarmUpdaterService = &service
+			swarmUpdaterService = service
 			continue
 		}
 
-		serviceQueue = append(serviceQueue, &service)
+		serviceQueue = append(serviceQueue, service)
 	}
 
 	// only create as many as we need
@@ -241,7 +241,7 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 	wg.Wait()
 
 	// now update self
-	if swarmUpdaterService != nil && c.validService(swarmUpdaterService) {
+	if swarmUpdaterService.ID != "na" && c.validService(swarmUpdaterService) {
 		if err := c.updateService(ctx, swarmUpdaterService); err != nil {
 			if ctx.Err() == context.Canceled {
 				log.Printf("Service update canceled")
