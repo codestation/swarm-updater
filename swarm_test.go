@@ -65,7 +65,7 @@ func TestValidServiceLabel(t *testing.T) {
 	assert := test.New(t)
 
 	s := Swarm{LabelEnable: true}
-	service := swarm.Service{}
+	service := &swarm.Service{}
 
 	ok := s.validService(service)
 	assert.False(ok)
@@ -83,7 +83,7 @@ func TestValidServiceBlacklist(t *testing.T) {
 	assert := test.New(t)
 
 	s := Swarm{LabelEnable: false}
-	service := swarm.Service{}
+	service := &swarm.Service{}
 	service.Spec.Name = "service_foobar"
 
 	ok := s.validService(service)
