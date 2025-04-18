@@ -23,10 +23,12 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/distribution/reference"
-	"github.com/docker/cli/cli/command"
-	"github.com/docker/cli/cli/flags"
+	"github.com/docker/cli/cli/config"
+	"github.com/docker/cli/cli/config/credentials"
+	_ "github.com/docker/cli/cli/connhelper"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
@@ -43,6 +45,9 @@ type Swarm struct {
 	client      DockerClient
 	Blacklist   []*regexp.Regexp
 	LabelEnable bool
+	MaxThreads  int
+	// used to protect the service update when ran from cron and http endpoint at the same time
+	mu sync.Mutex
 }
 
 func (c *Swarm) validService(service swarm.Service) bool {
@@ -64,22 +69,23 @@ func (c *Swarm) validService(service swarm.Service) bool {
 }
 
 // NewSwarm instantiates a new Docker swarm client
-func NewSwarm() (*Swarm, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+func NewSwarm(configDir string, opts ...client.Opt) (*Swarm, error) {
+	cli, err := client.NewClientWithOpts(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize docker client: %w", err)
 	}
 
-	dockerCli, err := command.NewDockerCli()
+	configFile, err := config.Load(configDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create docker cli: %w", err)
+		// https://github.com/docker/cli/issues/5075
+		slog.Warn("failed to load config", "err", err)
 	}
 
-	if err = dockerCli.Initialize(flags.NewClientOptions()); err != nil {
-		return nil, fmt.Errorf("failed to initialize docker cli: %w", err)
+	if !configFile.ContainsAuth() {
+		configFile.CredentialsStore = credentials.DetectDefaultStore(configFile.CredentialsStore)
 	}
 
-	return &Swarm{client: &dockerClient{apiClient: cli, dockerCli: dockerCli}}, nil
+	return &Swarm{client: &dockerClient{apiClient: cli, configFile: configFile}, MaxThreads: 1}, nil
 }
 
 func (c *Swarm) serviceList(ctx context.Context) ([]swarm.Service, error) {
@@ -89,6 +95,33 @@ func (c *Swarm) serviceList(ctx context.Context) ([]swarm.Service, error) {
 	}
 
 	return services, nil
+}
+
+func (c *Swarm) updateServiceWithRetries(ctx context.Context, service swarm.Service) error {
+	var err error
+	for i := 0; i < 3; i++ {
+		err = c.updateService(ctx, service)
+		if err == nil {
+			return nil
+		}
+
+		// check if error has "update out of sequence" in the message
+		if strings.Contains(err.Error(), "update out of sequence") {
+			slog.Debug("Service update out of sequence, retrying with updated version", "service", service.Spec.Name)
+
+			// fetch a newer service version
+			updatedService, _, err := c.client.ServiceInspectWithRaw(ctx, service.ID, types.ServiceInspectOptions{})
+			if err != nil {
+				return fmt.Errorf("ServiceInspect failed: %w", err)
+			}
+
+			service.Version = updatedService.Version
+		} else {
+			return err
+		}
+	}
+
+	return fmt.Errorf("failed to update service %s after retries", service.Spec.Name)
 }
 
 func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error {
@@ -157,6 +190,9 @@ func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error 
 // UpdateServices updates all the services from a Docker swarm that matches the specified image name.
 // If no images are passed then it updates all the services.
 func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	services, err := c.serviceList(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get service list: %w", err)
@@ -164,39 +200,46 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 
 	var serviceID string
 
+	sem := make(chan struct{}, c.MaxThreads)
+	var wg sync.WaitGroup
+
 	for _, service := range services {
 		if c.validService(service) {
+			sem <- struct{}{}
+			wg.Add(1)
 
-			// try to identify this service
-			if _, ok := service.Spec.Labels[serviceLabel]; ok {
-				serviceID = service.ID
+			go func(service swarm.Service) {
+				defer wg.Done()
+				defer func() { <-sem }()
 
-				continue
-			}
+				// try to identify this service
+				if _, ok := service.Spec.Labels[serviceLabel]; ok {
+					serviceID = service.ID
+					return
+				}
 
-			if len(imageName) > 0 {
-				hasMatch := false
-				for _, imageMatch := range imageName {
-					if strings.HasPrefix(service.Spec.TaskTemplate.ContainerSpec.Image, imageMatch) {
-						hasMatch = true
+				if len(imageName) > 0 {
+					hasMatch := false
+					for _, imageMatch := range imageName {
+						if strings.HasPrefix(service.Spec.TaskTemplate.ContainerSpec.Image, imageMatch) {
+							hasMatch = true
+							break
+						}
+					}
 
-						break
+					if !hasMatch {
+						return
 					}
 				}
 
-				if !hasMatch {
-					continue
+				if err = c.updateServiceWithRetries(ctx, service); err != nil {
+					if errors.Is(ctx.Err(), context.Canceled) {
+						slog.Error("Service update canceled", "service", service.Spec.Name)
+						return
+					}
+					slog.Error("Cannot update service", "service", service.Spec.Name, "error", err)
 				}
-			}
-
-			if err = c.updateService(ctx, service); err != nil {
-				if errors.Is(ctx.Err(), context.Canceled) {
-					slog.Error("Service update canceled", "service", service.Spec.Name)
-
-					break
-				}
-				slog.Error("Cannot update service", "service", service.Spec.Name, "error", err)
-			}
+			}(service)
 		} else {
 			slog.Debug("Service was ignored by blacklist or missing label", "service", service.Spec.Name)
 		}
@@ -209,7 +252,7 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 			return fmt.Errorf("cannot inspect the service %s: %w", serviceID, err)
 		}
 
-		err = c.updateService(ctx, service)
+		err = c.updateServiceWithRetries(ctx, service)
 		if err != nil {
 			return fmt.Errorf("failed to update the service %s: %w", serviceID, err)
 		}

@@ -29,9 +29,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/docker/cli/cli/connhelper"
+	"github.com/docker/docker/client"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/urfave/cli"
+)
+
+const (
+	DefaultListenAddr = ":8000"
+	DefaultTimeout    = 30 * time.Second
 )
 
 var blacklist []*regexp.Regexp
@@ -45,13 +52,47 @@ func run(c *cli.Context) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	swarm, err := NewSwarm()
+	var opts []client.Opt
+
+	host := c.String("host")
+	if host == "" {
+		host = os.Getenv("DOCKER_HOST")
+	}
+
+	if host != "" {
+		if strings.HasPrefix(host, "ssh://") {
+			helper, err := connhelper.GetConnectionHelper(host)
+			if err != nil {
+				return fmt.Errorf("could not connect to SSH host %s: %w", host, err)
+			}
+			opts = append(opts, client.WithHost(helper.Host))
+			opts = append(opts, client.WithDialContext(helper.Dialer))
+		} else {
+			opts = append(opts, client.WithHost(host))
+		}
+	}
+
+	opts = append(opts, client.WithTLSClientConfigFromEnv())
+
+	if os.Getenv("DOCKER_API_VERSION") != "" {
+		opts = append(opts, client.WithVersionFromEnv())
+	} else {
+		opts = append(opts, client.WithAPIVersionNegotiation())
+	}
+
+	configDir := c.String("config")
+	if configDir == "" {
+		configDir = os.Getenv("DOCKER_CONFIG")
+	}
+
+	swarm, err := NewSwarm(configDir, opts...)
 	if err != nil {
 		return fmt.Errorf("cannot instantiate new Docker swarm client: %w", err)
 	}
 
 	swarm.LabelEnable = c.Bool("label-enable")
 	swarm.Blacklist = blacklist
+	swarm.MaxThreads = c.Int("max-threads")
 	schedule := c.String("schedule")
 
 	// update the services and exit, if requested
@@ -83,6 +124,10 @@ func run(c *cli.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "Bind:"+err.Error())
 		}
 
+		if len(req.Images) == 0 {
+			return echo.NewHTTPError(http.StatusBadRequest, "No images to update")
+		}
+
 		slog.Info("Received update request", "images", strings.Join(req.Images, ","))
 
 		if err := swarm.UpdateServices(c.Request().Context(), req.Images...); err != nil {
@@ -94,8 +139,8 @@ func run(c *cli.Context) error {
 
 	svr := &http.Server{
 		Addr:         c.String("listen"),
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		ReadTimeout:  DefaultTimeout,
+		WriteTimeout: DefaultTimeout,
 	}
 
 	go func() {
@@ -129,11 +174,6 @@ func initialize(c *cli.Context) error {
 		"commit", Revision,
 		"date", LastCommit,
 		"clean_build", !Modified)
-
-	err := envConfig(c)
-	if err != nil {
-		return fmt.Errorf("failed to sync environment: %w", err)
-	}
 
 	if c.Bool("debug") {
 		slog.SetLogLoggerLevel(slog.LevelDebug)
@@ -180,11 +220,7 @@ func main() {
 		cli.StringFlag{
 			Name:  "host, H",
 			Usage: "docker host",
-			Value: "unix:///var/run/docker.sock",
-		},
-		cli.BoolFlag{
-			Name:  "tlsverify, t",
-			Usage: "use TLS and verify the server certificate",
+			Value: "",
 		},
 		cli.StringFlag{
 			Name:  "config, c",
@@ -214,13 +250,19 @@ func main() {
 		cli.StringFlag{
 			Name:   "listen, a",
 			Usage:  "listen address",
-			Value:  ":8000",
+			Value:  DefaultListenAddr,
 			EnvVar: "LISTEN",
 		},
 		cli.StringFlag{
 			Name:   "apikey, k",
 			Usage:  "api key to protect endpoint",
 			EnvVar: "APIKEY",
+		},
+		cli.IntFlag{
+			Name:   "max-threads, m",
+			Usage:  "max threads",
+			EnvVar: "MAX_THREADS",
+			Value:  1,
 		},
 	}
 

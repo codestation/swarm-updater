@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"testing"
 
@@ -218,7 +219,10 @@ func TestUpdateServices(t *testing.T) {
 		return swarm.ServiceUpdateResponse{}, fmt.Errorf("service not found: %s", serviceID)
 	}
 
-	s := Swarm{client: &mock}
+	// disable slog output
+	slog.SetDefault(slog.New(slog.DiscardHandler))
+
+	s := Swarm{client: &mock, MaxThreads: 1}
 	err := s.UpdateServices(context.TODO())
 	assert.NoError(err)
 }
