@@ -228,6 +228,6 @@ func main() {
 	app.Action = run
 
 	if err := app.Run(os.Args); err != nil {
-		slog.Error("Unrecoverable error", "error", err.Error())
+		slog.Error("Cannot start program", "error", err.Error())
 	}
 }
