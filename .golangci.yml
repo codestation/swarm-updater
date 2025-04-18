@@ -1,0 +1,29 @@
+version: "2"
+linters:
+  enable:
+    - gocritic
+    - predeclared
+    - revive
+    - unconvert
+  settings:
+    gocritic:
+      enabled-checks:
+        - deferInLoop
+    govet:
+      disable:
+        - fieldalignment
+      enable-all: true
+    revive:
+      rules:
+        - name: package-comments
+          severity: warning
+          disabled: true
+  exclusions:
+    rules:
+      - text: 'shadow: declaration of "(err|ctx)" shadows declaration at'
+        linters:
+          - govet
+formatters:
+  enable:
+    - gofumpt
+    - goimports

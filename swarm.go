@@ -1,5 +1,5 @@
 /*
-Copyright 2018 codestation
+Copyright 2025 codestation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,21 +20,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 
+	"github.com/distribution/reference"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
-	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/client"
-	"megpoid.dev/go/swarm-updater/log"
 )
 
-const serviceLabel string = "xyz.megpoid.swarm-updater"
-const updateOnlyLabel string = "xyz.megpoid.swarm-updater.update-only"
-const enabledServiceLabel string = "xyz.megpoid.swarm-updater.enable"
+const (
+	serviceLabel        string = "xyz.megpoid.swarm-updater"
+	updateOnlyLabel     string = "xyz.megpoid.swarm-updater.update-only"
+	enabledServiceLabel string = "xyz.megpoid.swarm-updater.enable"
+)
 
 // Swarm struct to handle all the service operations
 type Swarm struct {
@@ -94,7 +96,7 @@ func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error 
 	updateOpts := types.ServiceUpdateOptions{}
 
 	// get docker auth
-	encodedAuth, err := c.client.RetrieveAuthTokenFromImage(ctx, image)
+	encodedAuth, err := c.client.RetrieveAuthTokenFromImage(image)
 	if err != nil {
 		return fmt.Errorf("cannot retrieve auth token from service's image: %w", err)
 	}
@@ -114,7 +116,7 @@ func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error 
 	}
 
 	if image == service.Spec.TaskTemplate.ContainerSpec.Image {
-		log.Debug("Service %s is already up to date", service.Spec.Name)
+		slog.Debug("Service is already up to date", "service", service.Spec.Name)
 
 		return nil
 	}
@@ -125,14 +127,14 @@ func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error 
 		}
 	}
 
-	log.Debug("Updating service %s...", service.Spec.Name)
+	slog.Debug("Updating service", "service", service.Spec.Name)
 	response, err := c.client.ServiceUpdate(ctx, service.ID, service.Version, service.Spec, updateOpts)
 	if err != nil {
 		return fmt.Errorf("failed to update service %s: %w", service.Spec.Name, err)
 	}
 
 	for _, warning := range response.Warnings {
-		log.Debug("response warning:\n%s", warning)
+		slog.Debug("Response with warnings", "warning", warning)
 	}
 
 	updatedService, _, err := c.client.ServiceInspectWithRaw(ctx, service.ID, types.ServiceInspectOptions{})
@@ -144,9 +146,9 @@ func (c *Swarm) updateService(ctx context.Context, service swarm.Service) error 
 	current := updatedService.Spec.TaskTemplate.ContainerSpec.Image
 
 	if previous != current {
-		log.Printf("Service %s updated to %s", service.Spec.Name, current)
+		slog.Info("Updated service", "service", service.Spec.Name, "image", current)
 	} else {
-		log.Debug("Service %s is up to date", service.Spec.Name)
+		slog.Debug("Service is already up to date", "service", service.Spec.Name)
 	}
 
 	return nil
@@ -166,7 +168,7 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 		if c.validService(service) {
 
 			// try to identify this service
-			if _, ok := service.Spec.Annotations.Labels[serviceLabel]; ok {
+			if _, ok := service.Spec.Labels[serviceLabel]; ok {
 				serviceID = service.ID
 
 				continue
@@ -188,15 +190,15 @@ func (c *Swarm) UpdateServices(ctx context.Context, imageName ...string) error {
 			}
 
 			if err = c.updateService(ctx, service); err != nil {
-				if ctx.Err() == context.Canceled {
-					log.Printf("Service update canceled")
+				if errors.Is(ctx.Err(), context.Canceled) {
+					slog.Error("Service update canceled", "service", service.Spec.Name)
 
 					break
 				}
-				log.Printf("Cannot update service %s: %s", service.Spec.Name, err.Error())
+				slog.Error("Cannot update service", "service", service.Spec.Name, "error", err)
 			}
 		} else {
-			log.Debug("Service %s was ignored by blacklist or missing label", service.Spec.Name)
+			slog.Debug("Service was ignored by blacklist or missing label", "service", service.Spec.Name)
 		}
 	}
 

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 codestation
+Copyright 2025 codestation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ var (
 	Revision = "unknown"
 	// LastCommit indicates the date of the commit
 	LastCommit time.Time
-	// Modified indicates if the binary was built from a unmodified source code
+	// Modified indicates if the binary was built from an unmodified source code
 	Modified = true
 )
 

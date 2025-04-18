@@ -1,5 +1,5 @@
 /*
-Copyright 2018 codestation
+Copyright 2025 codestation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,8 +17,9 @@ limitations under the License.
 package main
 
 import (
+	"log/slog"
+
 	"github.com/robfig/cron/v3"
-	"megpoid.dev/go/swarm-updater/log"
 )
 
 // CronService holds the instantiated cron service.
@@ -44,15 +45,14 @@ func NewCronService(schedule string, cronFunc func()) (*CronService, error) {
 				defer func() { tryLockSem <- v }()
 				cronFunc()
 			default:
-				log.Debug("Skipped cron function. Already running")
+				slog.Debug("Skipping cron schedule. Already running")
 			}
 		})
-
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debug("Configured cron schedule: %s", schedule)
+	slog.Debug("Configured cron schedule", "schedule", schedule)
 
 	return &CronService{
 		cronService: cronService,
@@ -70,6 +70,6 @@ func (c *CronService) Stop() {
 	ctx := c.cronService.Stop()
 	<-ctx.Done()
 
-	log.Println("Waiting for running update to be finished...")
+	slog.Info("Waiting for running update to be finished...")
 	<-c.tryLockSem
 }

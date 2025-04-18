@@ -1,5 +1,5 @@
 /*
-Copyright 2018 codestation
+Copyright 2025 codestation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,7 +18,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -30,12 +32,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/urfave/cli"
-	"megpoid.dev/go/swarm-updater/log"
 )
 
 var blacklist []*regexp.Regexp
-
-const versionFormatter = `Swarm Updater version: %s, commit: %s, date: %s, clean build: %t`
 
 // UpdateRequest has a list of images that should be updated on the services that uses them
 type UpdateRequest struct {
@@ -61,11 +60,10 @@ func run(c *cli.Context) error {
 	}
 
 	cron, err := NewCronService(schedule, func() {
-		if err := swarm.UpdateServices(ctx); err != nil {
-			log.Printf("Cannot update services: %s", err.Error())
+		if updateErr := swarm.UpdateServices(ctx); updateErr != nil {
+			slog.Error("Failed to update services", "error", updateErr.Error())
 		}
 	})
-
 	if err != nil {
 		return fmt.Errorf("failed to setup cron, %w", err)
 	}
@@ -75,7 +73,7 @@ func run(c *cli.Context) error {
 	e.Debug = c.Bool("debug")
 	e.Use(middleware.Recover())
 	apiKey := c.String("apikey")
-	e.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
+	e.Use(middleware.KeyAuth(func(key string, _ echo.Context) (bool, error) {
 		return key == apiKey, nil
 	}))
 
@@ -85,7 +83,7 @@ func run(c *cli.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "Bind:"+err.Error())
 		}
 
-		log.Printf("Called update endpoint with images: %s", strings.Join(req.Images, ", "))
+		slog.Info("Received update request", "images", strings.Join(req.Images, ","))
 
 		if err := swarm.UpdateServices(c.Request().Context(), req.Images...); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Swarm update:"+err.Error())
@@ -101,8 +99,8 @@ func run(c *cli.Context) error {
 	}
 
 	go func() {
-		if err := e.StartServer(svr); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Web server failed: %s", err.Error())
+		if err := e.StartServer(svr); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("Failed to start web server", "error", err.Error())
 		}
 	}()
 
@@ -113,7 +111,7 @@ func run(c *cli.Context) error {
 	<-quit
 
 	if err := e.Shutdown(ctx); err != nil {
-		log.Fatal(err)
+		slog.Error("Failed to shutdown web server", "error", err.Error())
 	}
 
 	cron.Stop()
@@ -123,24 +121,30 @@ func run(c *cli.Context) error {
 
 func initialize(c *cli.Context) error {
 	if c.Bool("label-enable") && (c.IsSet("blacklist") || c.IsSet("blacklist-regex")) {
-		log.Fatal("Do not define a blacklist if label-enable is enabled")
+		slog.Error("Do not define a blacklist if label-enable is enabled")
 	}
 
-	log.Printf(versionFormatter, Tag, Revision, LastCommit, Modified)
+	slog.Info("Starting Swarm Updater",
+		"version", Tag,
+		"commit", Revision,
+		"date", LastCommit,
+		"clean_build", !Modified)
 
 	err := envConfig(c)
 	if err != nil {
 		return fmt.Errorf("failed to sync environment: %w", err)
 	}
 
-	log.EnableDebug(c.Bool("debug"))
+	if c.Bool("debug") {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	}
 
 	if c.IsSet("blacklist") {
 		list := c.StringSlice("blacklist")
 		for _, entry := range list {
 			rule := strings.TrimSpace(entry)
 			if rule == "" {
-				log.Println("Warning: ignoring empty rule in blacklist. Did you leave a trailing comma?")
+				slog.Warn("Ignoring empty rule in blacklist. Did you leave a trailing comma?y")
 				continue
 			}
 
@@ -152,14 +156,18 @@ func initialize(c *cli.Context) error {
 			blacklist = append(blacklist, regex)
 		}
 
-		log.Debug("Compiled %d blacklist rules", len(list))
+		slog.Debug("Blacklist rules compiled", "count", len(list))
 	}
 
 	return nil
 }
 
-func printVersion(c *cli.Context) {
-	_, _ = fmt.Fprintf(c.App.Writer, versionFormatter, Tag, Revision, LastCommit, Modified)
+func printVersion(_ *cli.Context) {
+	slog.Info("Starting Swarm Updater",
+		"version", Tag,
+		"commit", Revision,
+		"date", LastCommit,
+		"clean_build", !Modified)
 }
 
 func main() {
@@ -220,6 +228,6 @@ func main() {
 	app.Action = run
 
 	if err := app.Run(os.Args); err != nil {
-		log.Fatalf("Unrecoverable error: %s", err.Error())
+		slog.Error("Unrecoverable error", "error", err.Error())
 	}
 }

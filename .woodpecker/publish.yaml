@@ -1,0 +1,38 @@
+steps:
+  lint:
+    image: golangci/golangci-lint:v2.1.2
+    commands:
+      - golangci-lint run -v --timeout 10m ./...
+    environment:
+      GOPROXY:
+        from_secret: goproxy_url
+
+  test:
+    image: golang:1.24
+    commands:
+      - go test -coverprofile cover.out -v ./...
+      - go tool cover -func cover.out
+    environment:
+      GOPROXY:
+        from_secret: goproxy_url
+
+  build:
+    image: woodpeckerci/plugin-docker-buildx:5.2.2
+    settings:
+      cache: registry.megpoid.dev/codestation/swarm-updater:${CI_COMMIT_BRANCH}-cache
+      repo: registry.megpoid.dev/codestation/swarm-updater
+      tags: latest
+      registry: registry.megpoid.dev
+      config:
+        from_secret: registry_credentials
+      build_args:
+        CI_COMMIT_TAG: "${CI_COMMIT_TAG}"
+        GOPROXY:
+          from_secret: goproxy_url
+
+when:
+  event:
+    - push
+    - manual
+  branch:
+    - master

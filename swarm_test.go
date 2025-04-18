@@ -1,3 +1,19 @@
+/*
+Copyright 2025 codestation
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package main
 
 import (
@@ -10,13 +26,12 @@ import (
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/api/types/swarm"
 	test "github.com/stretchr/testify/assert"
-	"megpoid.dev/go/swarm-updater/log"
 )
 
 type dockerClientMock struct {
 	DistributionInspectFn        func(ctx context.Context, image, encodedAuth string) (registry.DistributionInspect, error)
-	RetrieveAuthTokenFromImageFn func(ctx context.Context, image string) (string, error)
-	ServiceUpdateFn              func(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error)
+	RetrieveAuthTokenFromImageFn func(image string) (string, error)
+	ServiceUpdateFn              func(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (swarm.ServiceUpdateResponse, error)
 	ServiceInspectWithRawFn      func(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error)
 	ServiceListFn                func(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error)
 }
@@ -29,20 +44,20 @@ func (s *dockerClientMock) DistributionInspect(ctx context.Context, image, encod
 	return registry.DistributionInspect{}, nil
 }
 
-func (s *dockerClientMock) RetrieveAuthTokenFromImage(ctx context.Context, image string) (string, error) {
+func (s *dockerClientMock) RetrieveAuthTokenFromImage(image string) (string, error) {
 	if s.RetrieveAuthTokenFromImageFn != nil {
-		return s.RetrieveAuthTokenFromImageFn(ctx, image)
+		return s.RetrieveAuthTokenFromImageFn(image)
 	}
 
 	return "", nil
 }
 
-func (s *dockerClientMock) ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error) {
+func (s *dockerClientMock) ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (swarm.ServiceUpdateResponse, error) {
 	if s.ServiceUpdateFn != nil {
 		return s.ServiceUpdateFn(ctx, serviceID, version, service, options)
 	}
 
-	return types.ServiceUpdateResponse{}, nil
+	return swarm.ServiceUpdateResponse{}, nil
 }
 
 func (s *dockerClientMock) ServiceInspectWithRaw(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error) {
@@ -114,7 +129,7 @@ func TestUpdateServiceEmpty(t *testing.T) {
 	assert := test.New(t)
 
 	mock := dockerClientMock{}
-	mock.ServiceListFn = func(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error) {
+	mock.ServiceListFn = func(_ context.Context, _ types.ServiceListOptions) ([]swarm.Service, error) {
 		return []swarm.Service{}, nil
 	}
 
@@ -167,11 +182,11 @@ func TestUpdateServices(t *testing.T) {
 
 	mock := dockerClientMock{}
 
-	mock.ServiceListFn = func(ctx context.Context, options types.ServiceListOptions) ([]swarm.Service, error) {
+	mock.ServiceListFn = func(_ context.Context, _ types.ServiceListOptions) ([]swarm.Service, error) {
 		return services, nil
 	}
 
-	mock.ServiceInspectWithRawFn = func(ctx context.Context, serviceID string, opts types.ServiceInspectOptions) (swarm.Service, []byte, error) {
+	mock.ServiceInspectWithRawFn = func(_ context.Context, serviceID string, _ types.ServiceInspectOptions) (swarm.Service, []byte, error) {
 		for _, service := range services {
 			if service.ID == serviceID {
 				return service, nil, nil
@@ -183,7 +198,7 @@ func TestUpdateServices(t *testing.T) {
 		return swarm.Service{}, nil, fmt.Errorf("service not found: %s", serviceID)
 	}
 
-	mock.ServiceUpdateFn = func(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (types.ServiceUpdateResponse, error) {
+	mock.ServiceUpdateFn = func(_ context.Context, serviceID string, _ swarm.Version, service swarm.ServiceSpec, _ types.ServiceUpdateOptions) (swarm.ServiceUpdateResponse, error) {
 		for _, serv := range services {
 			if serv.ID == serviceID {
 				image := service.TaskTemplate.ContainerSpec.Image
@@ -194,17 +209,14 @@ func TestUpdateServices(t *testing.T) {
 				serv.PreviousSpec.TaskTemplate.ContainerSpec.Image = image
 				serv.Spec.TaskTemplate.ContainerSpec.Image = image + "@sha256:1111111111111111111111111111111111111111111111111111111111111111"
 
-				return types.ServiceUpdateResponse{}, nil
+				return swarm.ServiceUpdateResponse{}, nil
 			}
 		}
 
 		assert.Fail("Should be on the service list", "%s isn't on service list", serviceID)
 
-		return types.ServiceUpdateResponse{}, fmt.Errorf("service not found: %s", serviceID)
+		return swarm.ServiceUpdateResponse{}, fmt.Errorf("service not found: %s", serviceID)
 	}
-
-	// disable log
-	log.Printf = log.Debug
 
 	s := Swarm{client: &mock}
 	err := s.UpdateServices(context.TODO())
