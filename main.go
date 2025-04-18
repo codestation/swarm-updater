@@ -89,7 +89,7 @@ func run(c *cli.Context) error {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Swarm update:"+err.Error())
 		}
 
-		return c.NoContent(http.StatusNoContent)
+		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	})
 
 	svr := &http.Server{
